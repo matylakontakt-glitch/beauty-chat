@@ -1,14 +1,13 @@
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
-import os
+import os, random
 
 # === Inicjalizacja ===
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "beauty_secret_key")
 client = OpenAI(api_key=api_key)
 
 # === Cennik zabiegów ===
@@ -16,38 +15,6 @@ PRICE_LIST = {
     "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
     "usta": "Makijaż permanentny ust kosztuje 1000 zł — dopigmentowanie w cenie 💋"
 }
-
-# === Pomocnicza funkcja: klasyfikacja intencji ===
-def classify_intent(text):
-    text_lower = text.lower()
-
-    # Termin / rezerwacja
-    if any(w in text_lower for w in [
-        "termin", "umówić", "zapisać", "zapis", "rezerwacja",
-        "wolne", "kiedy", "dostępne", "najbliższy", "chcę się umówić", "mogę przyjść"
-    ]):
-        return "termin"
-
-    # Emocje / decyzja
-    if any(w in text_lower for w in [
-        "boję", "strach", "pewna", "nie wiem", "zastanawiam",
-        "czy warto", "czy boli", "obawiam", "waham", "czy to bezpieczne"
-    ]):
-        return "emocje"
-
-    # Leki
-    if "izotek" in text_lower:
-        return "izotek"
-    if any(w in text_lower for w in [
-        "lek", "antybiotyk", "tabletki", "biorę", "leczę", "leki", "antykoncepcja"
-    ]):
-        return "leki"
-
-    # Informacje ogólne
-    if any(w in text_lower for w in ["cena", "koszt", "brwi", "usta", "zabieg"]):
-        return "info"
-
-    return "inne"
 
 # === Strona główna (frontend chatu) ===
 @app.route('/')
@@ -60,6 +27,20 @@ def start_message():
     welcome_text = "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
     return jsonify({'reply': welcome_text})
 
+# === Pomocnicza funkcja: czy trzeba dopytać o doświadczenie ===
+def should_ask_followup(user_message):
+    text_lower = user_message.lower()
+    trigger_words = ["pierwszy", "boję", "zastanawiam", "nie wiem", "rozważam", "czy warto", "myślę", "chciałabym"]
+    area_words = ["usta", "brwi", "brew"]
+    if any(word in text_lower for word in trigger_words) and not any(word in text_lower for word in area_words):
+        if random.random() < 0.4:  # tylko w ok. 40% przypadków, by zachować naturalność
+            return random.choice([
+                "A robiłaś już wcześniej makijaż permanentny, czy to Twój pierwszy raz? 💋",
+                "Zastanawiasz się nad PMU — a myślisz raczej o ustach czy o brwiach? ✨",
+                "Dobrze, że pytasz 🌿 A powiedz — masz już jakieś doświadczenia z PMU czy dopiero rozważasz pierwszy zabieg?"
+            ])
+    return None
+
 # === Endpoint chatu (backend) ===
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -70,14 +51,10 @@ def chat():
         return jsonify({'reply': 'Napisz coś, żebym mogła Ci pomóc 💬'})
 
     text_lower = user_message.lower()
-    intent = classify_intent(user_message)
 
-    # Zliczanie wiadomości w sesji
-    session['msg_count'] = session.get('msg_count', 0) + 1
-    msg_count = session['msg_count']
-
-    # === 1️⃣ Sprawdzenie, czy pytanie dotyczy ceny ===
-    if any(word in text_lower for word in ["ile", "koszt", "cena"]):
+    # === 1️⃣ Pytania o cenę ===
+    price_keywords = ["ile", "koszt", "cena"]
+    if any(word in text_lower for word in price_keywords):
         if "usta" in text_lower or "ust" in text_lower:
             return jsonify({'reply': PRICE_LIST["usta"]})
         elif "brwi" in text_lower or "brew" in text_lower:
@@ -85,60 +62,57 @@ def chat():
         else:
             return jsonify({'reply': 'Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋'})
 
-    # === 2️⃣ Sprawdzenie, czy pytanie dotyczy terminów ===
-    if intent == "termin":
-        return jsonify({
-            'reply': "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 — zadzwoń pod 881 622 882 💋"
-        })
+    # === 2️⃣ Pytania o terminy ===
+    booking_keywords = ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy mogę", "czy są miejsca", "dostępny"]
+    if any(word in text_lower for word in booking_keywords):
+        return jsonify({'reply': "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 Zadzwoń: 881 622 882"})
 
-    # === 3️⃣ Sprawdzenie, czy pytanie dotyczy leków ===
-    if intent == "izotek":
-        return jsonify({
-            'reply': "Podczas kuracji Izotekiem nie wykonuje się makijażu permanentnego. Zabieg można wykonać dopiero po zakończeniu leczenia 💊"
-        })
-    if intent == "leki":
-        return jsonify({
-            'reply': "W przypadku przyjmowania leków najlepiej skontaktować się bezpośrednio z salonem, aby ocenić bezpieczeństwo zabiegu 💬 881 622 882"
-        })
+    # === 3️⃣ Pytania o leki ===
+    medication_keywords = ["lek", "leki", "tabletki", "antybiotyk", "antybiotyki", "antykoncepcję", "antykoncepcja"]
+    if any(word in text_lower for word in medication_keywords):
+        if "izotek" in text_lower:
+            return jsonify({'reply': "Podczas kuracji Izotekiem nie wykonuje się makijażu permanentnego 🌿 Zabieg można wykonać po zakończeniu leczenia."})
+        else:
+            return jsonify({'reply': "W przypadku przyjmowania leków najlepiej skontaktować się bezpośrednio z salonem, by upewnić się, że zabieg będzie bezpieczny 🌸"})
 
-    # === 4️⃣ Generowanie odpowiedzi GPT z kontekstem ===
-    phone_suggestion = ""
-    # Subtelne zaproszenie do kontaktu co 3 wiadomości, tylko gdy ma sens
-    if intent in ["emocje", "termin", "inne"] and msg_count % 3 == 0:
-        phone_suggestion = (
-            " Jeśli chcesz, możemy ustalić wszystko przez telefon — 881 622 882 💬"
-            if intent == "termin"
-            else " Jeśli masz pytania lub chcesz dobrać zabieg idealny dla siebie — zadzwoń, chętnie pomogę 💋 881 622 882"
-        )
+    # === 4️⃣ Tworzenie kontekstu systemowego GPT ===
+    system_prompt = (
+        "Jesteś Beauty Chat — inteligentnym asystentem salonu beauty. "
+        "Piszesz w przyjazny, ekspercki sposób. Odpowiadasz konkretnie, ale z klasą i kobiecą lekkością. "
+        "Unikasz sztywnych, encyklopedycznych tekstów — doradzasz jak stylistka, która zna się na rzeczy. "
+        "Używasz emotek z wyczuciem (💋✨🌿), nie przesadzasz. Każda odpowiedź ma maksymalnie 2–4 zdania. "
+        "Nie powtarzaj numeru telefonu częściej niż co kilka odpowiedzi. "
+        "W naturalnych momentach, gdy klientka jest niezdecydowana, zadaj subtelne pytanie pogłębiające rozmowę, np. o doświadczenie lub preferencje. "
+        "Nie wspominaj o ofertach, promocjach, sprzedaży. "
+        "Nie odpowiadaj na pytania spoza tematu makijażu permanentnego brwi i ust. "
+        "Twoim celem jest pomóc klientce zrozumieć zabiegi, pielęgnację i poczuć się zaopiekowaną."
+    )
 
+    # === 5️⃣ Zapytanie do GPT ===
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
+            temperature=0.5,
+            max_tokens=600,
             messages=[
-                {
-                    "role": "system",
-                    "content": f"Jesteś Beauty Chat — inteligentnym asystentem salonu beauty. \
-                    Piszesz w przyjazny, ekspercki sposób. \
-                    Odpowiadasz konkretnie, ale z klasą i kobiecą lekkością. \
-                    Unikasz sztywnych, encyklopedycznych tekstów — zamiast tego doradzasz jak stylistka, która zna się na rzeczy. \
-                    Używasz emotek z wyczuciem (💋✨🌿), nie przesadzasz. \
-                    Każda odpowiedź ma maksymalnie 2–4 zdania. \
-                    Unikaj powtarzania informacji i nie wspominaj ponownie o numerze telefonu, jeśli już został podany. \
-                    Nie odpowiadasz na pytania niezwiązane z makijażem permanentnym brwi i ust. \
-                    Jeśli ktoś zapyta o coś spoza tej tematyki — grzecznie przekierowujesz, np: 'To pytanie wykracza poza moją specjalizację, skupmy się na tematach PMU, dobrze?' \
-                    Twoim celem jest pomóc klientce zrozumieć zabiegi, pielęgnację i poczuć się zaopiekowaną."
-                },
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.4,
-            max_tokens=600
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ]
         )
-
         reply = completion.choices[0].message.content.strip()
 
-        # Dodaj sugestię kontaktu tylko jeśli kontekst uzasadnia
-        if phone_suggestion and "881" not in reply:
-            reply += phone_suggestion
+        # sprawdź, czy warto dodać pytanie follow-up
+        follow_up = should_ask_followup(user_message)
+        if follow_up:
+            reply = f"{reply}\n\n{follow_up}"
+
+        # delikatnie i losowo dodaj zaproszenie do kontaktu
+        if random.random() < 0.25 and not any(x in text_lower for x in ["zadzwoń", "telefon", "kontakt"]):
+            reply += random.choice([
+                "\n\nJeśli chcesz, możemy omówić szczegóły przez telefon 💋 881 622 882",
+                "\n\nChcesz, żebym pomogła dobrać idealną technikę? Zadzwoń: 881 622 882 ✨",
+                "\n\nJeśli wolisz, możesz zadzwonić — wszystko spokojnie wyjaśnimy 🌿 881 622 882"
+            ])
 
     except Exception as e:
         reply = f"Ups! Coś poszło nie tak 💔 ({e})"
@@ -153,6 +127,7 @@ if __name__ == "__main__":
         port=int(os.environ.get("PORT", 10000)),
         debug=False
     )
+
 
 
 
