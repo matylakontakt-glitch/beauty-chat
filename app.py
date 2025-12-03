@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
-import os, random
+import os
 
 # === Inicjalizacja ===
 load_dotenv()
@@ -10,13 +10,13 @@ api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 client = OpenAI(api_key=api_key)
 
-# === Cennik zabiegów ===
+# === Cennik ===
 PRICE_LIST = {
     "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
     "usta": "Makijaż permanentny ust kosztuje 1000 zł — dopigmentowanie w cenie 💋"
 }
 
-# === Strona główna (frontend chatu) ===
+# === Strona główna (frontend) ===
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
@@ -24,12 +24,10 @@ def serve_index():
 # === Wiadomość powitalna ===
 @app.route('/start', methods=['GET'])
 def start_message():
-    welcome_text = (
-        "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
-    )
+    welcome_text = "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
     return jsonify({'reply': welcome_text})
 
-# === Endpoint chatu (backend) ===
+# === Endpoint chatu ===
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json(silent=True) or {}
@@ -39,90 +37,95 @@ def chat():
 
     text_lower = user_message.lower()
 
-    # === 1️⃣ CENA ===
-    price_keywords = ["ile", "koszt", "cena"]
-    excluded_phrases = ["utrzymuje", "trwa", "gojenie", "czas", "dni"]
-    if any(word in text_lower for word in price_keywords) and not any(p in text_lower for p in excluded_phrases):
+    # 1️⃣ CENA — nie myli „ile się utrzymuje” z kosztami
+    price_triggers = ["ile", "koszt", "cena"]
+    exclude_price = ["utrzymuje", "trwa", "gojenie", "czas", "dni"]
+    if any(w in text_lower for w in price_triggers) and not any(e in text_lower for e in exclude_price):
         if "usta" in text_lower or "ust" in text_lower:
             return jsonify({'reply': PRICE_LIST["usta"]})
         elif "brwi" in text_lower or "brew" in text_lower:
             return jsonify({'reply': PRICE_LIST["brwi"]})
         else:
-            return jsonify({'reply': 'Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋'})
+            return jsonify({'reply': "Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋"})
 
-    # === 2️⃣ TERMINY ===
-    booking_keywords = ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy mogę", "czy są miejsca", "dostępny"]
-    if any(word in text_lower for word in booking_keywords):
+    # 2️⃣ TERMINY
+    booking_words = ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy mogę", "dostępny", "czy są miejsca"]
+    if any(w in text_lower for w in booking_words):
         return jsonify({'reply': "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 Zadzwoń: 881 622 882"})
 
-    # === 3️⃣ LEKI ===
-    medication_keywords = ["lek", "leki", "tabletki", "antybiotyk", "antybiotyki", "antykoncepcję", "antykoncepcja"]
-    if any(word in text_lower for word in medication_keywords):
+    # 3️⃣ LEKI (poza Izotekiem)
+    med_words = ["lek", "leki", "tabletki", "antybiotyk", "antykoncepc"]
+    if any(w in text_lower for w in med_words):
         if "izotek" in text_lower:
             return jsonify({'reply': "Podczas kuracji Izotekiem nie wykonuje się makijażu permanentnego 🌿 Zabieg można wykonać po zakończeniu leczenia."})
         else:
-            return jsonify({'reply': "W przypadku przyjmowania leków najlepiej skontaktować się bezpośrednio z salonem, by upewnić się, że zabieg będzie bezpieczny 🌸"})
+            return jsonify({'reply': "Jeśli przyjmujesz leki, najlepiej skontaktować się bezpośrednio z salonem, aby potwierdzić bezpieczeństwo zabiegu 🌸"})
 
-    # === 4️⃣ ANALIZA CZASU I INTENCJI ===
-    NOW_WORDS = ["mam", "jestem", "mnie", "swędzi", "łuszczy się", "goi się", "odpada", "szczypie"]
-    PAST_WORDS = ["miałam", "robiłam", "byłam"]
+    # 4️⃣ DOPIGMENTOWANIE / KOREKTA
+    if any(w in text_lower for w in ["dopigment", "korekt", "poprawk"]):
+        reply = (
+            "Dopigmentowanie wykonuje się zwykle po 4–8 tygodniach od zabiegu 🌿 "
+            "Wtedy pigment się stabilizuje, a skóra jest już w pełni zagojona. "
+            "Skontaktuj się z salonem, żeby dobrać idealny termin 💋 881 622 882"
+        )
+        return jsonify({'reply': reply})
+
+    # 5️⃣ AFTERCARE (pielęgnacja po zabiegu)
+    aftercare_words = ["moczyć", "myć", "smarować", "łuszczy", "swędzi", "goi", "piecze", "szczypie", "złuszcza", "maść", "balsam"]
+    if any(w in text_lower for w in aftercare_words):
+        if "brwi" in text_lower:
+            reply = (
+                "Nie mocz brwi przez pierwsze dni po zabiegu 🌿 "
+                "To normalne, jeśli lekko się łuszczą lub swędzą — to proces gojenia. "
+                "Stosuj maść zaleconą przez linergistkę i unikaj słońca przez ok. 10 dni ✨"
+            )
+        elif "usta" in text_lower:
+            reply = (
+                "Po zabiegu ust 💋 skóra może być delikatnie napięta lub sucha. "
+                "Nawilżaj regularnie balsamem/maścią zaleconą przez linergistkę i unikaj gorących napojów przez kilka dni 🌿"
+            )
+        else:
+            reply = (
+                "Po zabiegu 🌸 nie mocz pigmentowanego miejsca, stosuj maść zaleconą przez linergistkę i daj skórze czas — pigment ustabilizuje się w kolejnych tygodniach ✨"
+            )
+        return jsonify({'reply': reply})
+
+    # 6️⃣ NIEJASNA INTENCJA (np. „robiłam brwi tydzień temu”)
+    if any(w in text_lower for w in ["robiłam", "miałam", "byłam"]) and not any(x in text_lower for x in ["czy", "mogę", "dopigment", "moczyć", "goić", "łuszczy", "smarować"]):
+        reply = (
+            "Świetnie 🌿 Czy pytasz, jak teraz dbać o brwi po zabiegu, "
+            "czy raczej chcesz je odświeżyć (dopigmentowanie)? 💋"
+        )
+        return jsonify({'reply': reply})
+
+    # 7️⃣ CZASY / INTENCJE
+    NOW_WORDS = ["mam", "swędzi", "łuszczy się", "goi się", "piecze", "szczypie", "spuchnięte"]
     FUTURE_WORDS = ["będę", "czy po", "czy potem", "czy po zabiegu", "czy po brwiach", "czy po ustach"]
 
     if any(w in text_lower for w in NOW_WORDS):
         context = "aftercare"
     elif any(w in text_lower for w in FUTURE_WORDS):
         context = "healing_info"
-    elif any(w in text_lower for w in PAST_WORDS):
-        context = "experience"
     else:
         context = "general"
 
-    # === 5️⃣ ODPOWIEDZI WG KONTEKSTU ===
-    if context == "aftercare":
+    # 8️⃣ ODPOWIEDZI wg kontekstu
+    if context == "healing_info":
         if "brwi" in text_lower:
             reply = (
-                "To naturalne 🌿 Brwi po zabiegu mogą delikatnie swędzieć lub się łuszczyć — to znak, że skóra się goi. "
-                "Smaruj je zaleconą maścią od linergistki i unikaj słońca. "
-                "Pigment się stabilizuje w ciągu kilku tygodni ✨"
+                "Po zabiegu brwi zwykle goją się ok. 5–10 dni 🌿 — może wystąpić lekkie łuszczenie. "
+                "Kolor z czasem się stabilizuje, a efekt końcowy jest widoczny po kilku tygodniach ✨"
             )
         elif "usta" in text_lower:
             reply = (
-                "Po zabiegu ust 💋 skóra może być lekko napięta lub sucha — to normalne. "
-                "Pamiętaj o regularnym nawilżaniu balsamem lub maścią i unikaj gorących napojów przez kilka dni. "
-                "Efekt końcowy pojawi się po kilku tygodniach 🌸"
+                "Usta goją się szybciej niż brwi 💋 — najczęściej 3–5 dni. "
+                "W tym czasie pigment może wyglądać intensywniej, ale potem się uspokoi 🌿"
             )
         else:
-            reply = (
-                "Po zabiegu 🌿 najważniejsza jest delikatna pielęgnacja i cierpliwość. "
-                "Nie mocz obszaru pigmentacji, smaruj go zalecaną maścią i unikaj słońca — pigment się ułoży ✨"
-            )
+            reply = "Gojenie po makijażu permanentnym trwa zwykle 5–10 dni 🌸, a pigment stabilizuje się w ciągu 3–4 tygodni."
         return jsonify({'reply': reply})
 
-    elif context == "healing_info":
-        if "brwi" in text_lower:
-            reply = (
-                "Po zabiegu brwi zwykle goją się ok. 5–10 dni 🌿 — mogą lekko się łuszczyć lub swędzieć. "
-                "To naturalny etap regeneracji skóry, a kolor z czasem łagodnieje ✨"
-            )
-        elif "usta" in text_lower:
-            reply = (
-                "Usta po zabiegu goją się szybciej niż brwi 💋 — zazwyczaj w 3–5 dni. "
-                "W tym czasie mogą być delikatnie suche lub napięte, ale to całkowicie normalne 🌿"
-            )
-        else:
-            reply = (
-                "Proces gojenia po PMU trwa zwykle od 5 do 10 dni 🌸, a efekt końcowy stabilizuje się w ciągu kilku tygodni."
-            )
-        return jsonify({'reply': reply})
-
-    elif context == "experience":
-        reply = (
-            "O, czyli masz już doświadczenie z PMU ✨ To super! Każda skóra reaguje inaczej, "
-            "ale zasady pielęgnacji po zabiegu są zawsze podobne 🌿"
-        )
-        return jsonify({'reply': reply})
-
-    # === 6️⃣ GPT – DLA INNYCH PYTAŃ ===
+    # 9️⃣ GPT fallback – jeśli nic nie pasuje
     try:
         system_prompt = (
             "Jesteś Beauty Chat — inteligentnym asystentem salonu beauty. "
@@ -130,12 +133,9 @@ def chat():
             "Unikasz sztywnych opisów — doradzasz jak stylistka, która zna się na rzeczy. "
             "Używasz emotek z wyczuciem (💋✨🌿), maksymalnie 2–4 zdania. "
             "Nie odpowiadasz na pytania niezwiązane z makijażem permanentnym brwi i ust. "
-            "Nie wspominaj o promocjach, ofertach ani sprzedaży. "
-            "Co pewien czas, gdy to naturalne, dodaj delikatne zaproszenie do kontaktu: "
-            "'Jeśli chcesz, możemy ustalić wszystko przez telefon 💋 881 622 882' lub "
-            "'Zadzwoń, a pomożemy Ci znaleźć idealny termin ✨'."
+            "Nie wspominaj o promocjach ani sprzedaży. "
+            "Gdy rozmowa dotyczy obaw, decyzji lub efektów, możesz delikatnie zaprosić do kontaktu telefonicznego: 881 622 882."
         )
-
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             temperature=0.5,
@@ -146,19 +146,15 @@ def chat():
             ]
         )
         reply = completion.choices[0].message.content.strip()
-
     except Exception as e:
         reply = f"Ups! Coś poszło nie tak 💔 ({e})"
 
     return jsonify({'reply': reply})
 
-# === URUCHOMIENIE SERWERA ===
+# === Uruchomienie serwera ===
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000)),
-        debug=False
-    )
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=False)
+
 
 
 
