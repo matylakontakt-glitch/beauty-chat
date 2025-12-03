@@ -102,8 +102,11 @@ h2 {
   display: inline-block;
 }
 
+/* === Wiadomości użytkownika (po prawej) === */
+.user {
+  justify-content: flex-end;
+}
 .user .message-content {
-  align-self: flex-end;
   text-align: right;
   background: rgba(255,255,255,0.08);
   color: #fff;
@@ -111,11 +114,19 @@ h2 {
   box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
 }
 
+/* === Wiadomości bota (po lewej, z avatarem) === */
+.bot {
+  justify-content: flex-start;
+}
 .bot .message-content {
+  order: 2;
   text-align: left;
   background: rgba(255,255,255,0.05);
   color: var(--accent-soft);
   backdrop-filter: blur(4px);
+}
+.bot .avatar {
+  order: 1;
 }
 
 /* ===== Input + button wrapper ===== */
@@ -346,6 +357,7 @@ sendBtn.addEventListener('click', sendMessage);
 </script>
 </body>
 </html>
+
 
 
 
