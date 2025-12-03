@@ -27,13 +27,13 @@ def start_message():
     welcome_text = "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
     return jsonify({'reply': welcome_text})
 
-# === Pomocnicza funkcja: czy trzeba dopytać o doświadczenie ===
+# === Pomocnicza funkcja: czy warto dopytać ===
 def should_ask_followup(user_message):
     text_lower = user_message.lower()
     trigger_words = ["pierwszy", "boję", "zastanawiam", "nie wiem", "rozważam", "czy warto", "myślę", "chciałabym"]
     area_words = ["usta", "brwi", "brew"]
     if any(word in text_lower for word in trigger_words) and not any(word in text_lower for word in area_words):
-        if random.random() < 0.4:  # tylko w ok. 40% przypadków, by zachować naturalność
+        if random.random() < 0.4:
             return random.choice([
                 "A robiłaś już wcześniej makijaż permanentny, czy to Twój pierwszy raz? 💋",
                 "Zastanawiasz się nad PMU — a myślisz raczej o ustach czy o brwiach? ✨",
@@ -52,9 +52,10 @@ def chat():
 
     text_lower = user_message.lower()
 
-    # === 1️⃣ Pytania o cenę ===
+    # === 1️⃣ CENA — z wykluczeniem pytań o trwałość i czas ===
     price_keywords = ["ile", "koszt", "cena"]
-    if any(word in text_lower for word in price_keywords):
+    excluded_phrases = ["utrzymuje", "trwa", "gojenie", "czas", "dni"]
+    if any(word in text_lower for word in price_keywords) and not any(phrase in text_lower for phrase in excluded_phrases):
         if "usta" in text_lower or "ust" in text_lower:
             return jsonify({'reply': PRICE_LIST["usta"]})
         elif "brwi" in text_lower or "brew" in text_lower:
@@ -62,12 +63,12 @@ def chat():
         else:
             return jsonify({'reply': 'Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋'})
 
-    # === 2️⃣ Pytania o terminy ===
+    # === 2️⃣ TERMINY ===
     booking_keywords = ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy mogę", "czy są miejsca", "dostępny"]
     if any(word in text_lower for word in booking_keywords):
         return jsonify({'reply': "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 Zadzwoń: 881 622 882"})
 
-    # === 3️⃣ Pytania o leki ===
+    # === 3️⃣ LEKI ===
     medication_keywords = ["lek", "leki", "tabletki", "antybiotyk", "antybiotyki", "antykoncepcję", "antykoncepcja"]
     if any(word in text_lower for word in medication_keywords):
         if "izotek" in text_lower:
@@ -75,20 +76,20 @@ def chat():
         else:
             return jsonify({'reply': "W przypadku przyjmowania leków najlepiej skontaktować się bezpośrednio z salonem, by upewnić się, że zabieg będzie bezpieczny 🌸"})
 
-    # === 4️⃣ Tworzenie kontekstu systemowego GPT ===
+    # === 4️⃣ KONTEKST GPT ===
     system_prompt = (
         "Jesteś Beauty Chat — inteligentnym asystentem salonu beauty. "
         "Piszesz w przyjazny, ekspercki sposób. Odpowiadasz konkretnie, ale z klasą i kobiecą lekkością. "
-        "Unikasz sztywnych, encyklopedycznych tekstów — doradzasz jak stylistka, która zna się na rzeczy. "
-        "Używasz emotek z wyczuciem (💋✨🌿), nie przesadzasz. Każda odpowiedź ma maksymalnie 2–4 zdania. "
-        "Nie powtarzaj numeru telefonu częściej niż co kilka odpowiedzi. "
-        "W naturalnych momentach, gdy klientka jest niezdecydowana, zadaj subtelne pytanie pogłębiające rozmowę, np. o doświadczenie lub preferencje. "
-        "Nie wspominaj o ofertach, promocjach, sprzedaży. "
-        "Nie odpowiadaj na pytania spoza tematu makijażu permanentnego brwi i ust. "
-        "Twoim celem jest pomóc klientce zrozumieć zabiegi, pielęgnację i poczuć się zaopiekowaną."
+        "Unikasz sztywnych opisów — doradzasz jak stylistka, która zna się na rzeczy. "
+        "Używasz emotek z wyczuciem (💋✨🌿), maksymalnie 2–4 zdania. "
+        "Jeśli klientka ma obawy lub jest niezdecydowana, możesz zapytać subtelnie o doświadczenia lub preferencje. "
+        "Nie odpowiadasz na pytania niezwiązane z makijażem permanentnym brwi i ust. "
+        "Nie wspominaj o promocjach, ofertach ani sprzedaży. "
+        "Co pewien czas, gdy to naturalne, dodaj delikatne zaproszenie do kontaktu: "
+        "np. 'Jeśli chcesz, możemy ustalić wszystko przez telefon 💋 881 622 882' lub 'Zadzwoń, a pomożemy Ci znaleźć idealny termin ✨'."
     )
 
-    # === 5️⃣ Zapytanie do GPT ===
+    # === 5️⃣ Odpowiedź GPT ===
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -101,12 +102,12 @@ def chat():
         )
         reply = completion.choices[0].message.content.strip()
 
-        # sprawdź, czy warto dodać pytanie follow-up
+        # naturalny follow-up
         follow_up = should_ask_followup(user_message)
         if follow_up:
             reply = f"{reply}\n\n{follow_up}"
 
-        # delikatnie i losowo dodaj zaproszenie do kontaktu
+        # delikatne zaproszenie do kontaktu (25%)
         if random.random() < 0.25 and not any(x in text_lower for x in ["zadzwoń", "telefon", "kontakt"]):
             reply += random.choice([
                 "\n\nJeśli chcesz, możemy omówić szczegóły przez telefon 💋 881 622 882",
@@ -120,13 +121,14 @@ def chat():
     return jsonify({'reply': reply})
 
 
-# === Uruchomienie serwera ===
+# === URUCHOMIENIE SERWERA ===
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 10000)),
         debug=False
     )
+
 
 
 
