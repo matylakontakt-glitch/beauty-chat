@@ -10,174 +10,205 @@ api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 client = OpenAI(api_key=api_key)
 
-# === Cennik ===
+# === Konfiguracja podstawowa ===
+PHONE = "881 622 882"
+
 PRICE_LIST = {
     "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
     "usta": "Makijaż permanentny ust kosztuje 1000 zł — dopigmentowanie w cenie 💋"
 }
 
-# === Strona główna (frontend) ===
-@app.route('/')
+# ——— Pomocnicze ———
+def any_in(text: str, words) -> bool:
+    return any(w in text for w in words)
+
+def all_in(text: str, words) -> bool:
+    return all(w in text for w in words)
+
+def reply_json(msg: str):
+    return jsonify({"reply": msg})
+
+# === Front (index.html) ===
+@app.route("/")
 def serve_index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(".", "index.html")
 
-# === Wiadomość powitalna ===
-@app.route('/start', methods=['GET'])
+# === Wiadomość powitalna (dla frontu) ===
+@app.route("/start", methods=["GET"])
 def start_message():
-    welcome_text = "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
-    return jsonify({'reply': welcome_text})
+    return reply_json(
+        "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨"
+    )
 
-# === Endpoint chatu ===
-@app.route('/chat', methods=['POST'])
+# === Główny endpoint chatu ===
+@app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json(silent=True) or {}
-    user_message = (data.get('message') or '').strip()
+    user_message = (data.get("message") or "").strip()
     if not user_message:
-        return jsonify({'reply': 'Napisz coś, żebym mogła Ci pomóc 💬'})
+        return reply_json("Napisz coś, żebym mogła Ci pomóc 💬")
 
-    text_lower = user_message.lower()
+    t = user_message.lower()
 
-    # === 1️⃣ CENA ===
+    # ——— Rozpoznanie intencji (flagi) ———
     price_triggers = ["ile", "koszt", "cena"]
-    exclude_price = ["utrzymuje", "trwa", "gojenie", "czas", "dni"]
-    if any(w in text_lower for w in price_triggers) and not any(e in text_lower for e in exclude_price):
-        if "usta" in text_lower or "ust" in text_lower:
-            return jsonify({'reply': PRICE_LIST["usta"]})
-        elif "brwi" in text_lower or "brew" in text_lower:
-            return jsonify({'reply': PRICE_LIST["brwi"]})
-        else:
-            return jsonify({'reply': "Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋"})
+    price_exclude  = ["utrzymuje", "trwa", "trzyma się", "gojenie", "dni", "czas"]
 
-    # === 2️⃣ TERMINY ===
-    booking_words = ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy mogę", "dostępny", "czy są miejsca"]
-    if any(w in text_lower for w in booking_words):
-        return jsonify({'reply': "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 Zadzwoń: 881 622 882"})
+    terms_triggers = ["termin", "umówić", "zapis", "rezerwac", "wolne", "dostępny", "czy są miejsca", "kalendarz"]
 
-    # === 3️⃣ LEKI ===
-    med_words = ["lek", "leki", "tabletki", "antybiotyk", "antykoncepc"]
-    if any(w in text_lower for w in med_words):
-        if "izotek" in text_lower:
-            return jsonify({'reply': "Podczas kuracji Izotekiem nie wykonuje się makijażu permanentnego 🌿 Zabieg można wykonać po zakończeniu leczenia."})
-        else:
-            return jsonify({'reply': "Jeśli przyjmujesz leki, najlepiej skontaktować się z salonem, aby potwierdzić bezpieczeństwo zabiegu 🌸"})
+    med_triggers = ["lek", "leki", "tabletki", "antybiotyk", "antykoncepc"]
+    izotek_words = ["izotek", "isotretinoin", "izotretinoina", "roaccutane"]
 
-    # === 4️⃣ DOPIGMENTOWANIE / KOREKTA ===
-    if any(w in text_lower for w in ["dopigment", "korekt", "poprawk"]):
-        if "kiedy" in text_lower or "mogę" in text_lower:
-            reply = (
-                "Dopigmentowanie zaleca się wykonać między 6. a 8. tygodniem po głównym zabiegu 🌿 "
-                "Dzięki temu pigment zdąży się ustabilizować i efekt będzie równomierny 💋"
-            )
-        else:
-            reply = (
-                "Dopigmentowanie wykonuje się zwykle po 4–8 tygodniach od zabiegu 🌿 "
-                "Wtedy pigment się stabilizuje, a skóra jest już w pełni zagojona. "
-                "Skontaktuj się z salonem, żeby dobrać idealny termin 💋 881 622 882"
-            )
-        return jsonify({'reply': reply})
+    dopigment_words = ["dopigment", "korekt", "poprawk"]
 
-    # === 5️⃣ MOCZENIE BRWI ===
-    if "brwi" in text_lower and "moczyć" in text_lower and ("kiedy" in text_lower or "mogę" in text_lower):
-        reply = (
-            "Brwi możesz delikatnie moczyć dopiero, gdy wszystkie strupki się złuszczą 🌿 "
-            "Zazwyczaj po około 7–10 dniach od zabiegu ✨ Do tego czasu unikaj sauny, basenu i ekspozycji na słońce."
+    aftercare_words = ["moczyć", "myć", "smarować", "łuszczy", "złuszcza", "swędzi", "goi", "piecze", "szczypie", "maść", "balsam", "higiena"]
+    moisten_brows_question = ("brwi" in t) and ("moczyć" in t) and any_in(t, ["kiedy", "mogę", "od kiedy"])
+
+    duration_words = ["utrzymuje", "utrzymują", "trwa", "trzyma się", "trzymają", "jak długo się trzyma", "na ile wystarcza", "po jakim czasie zanika"]
+    healing_words  = ["goi", "gojenie", "kiedy się zagoi", "po jakim czasie się goi"]
+
+    past_experience_words = ["robiłam", "miałam", "byłam"]  # nie przesądzamy intencji
+
+    has_question_intent = any_in(t, ["czy", "kiedy", "mogę", "jak", "ile"])
+
+    mentions_brows = any_in(t, ["brwi", "brew", "brw"])
+    mentions_lips  = any_in(t, ["usta", "ust"])
+
+    # ——— PRIORYTETY I ROZSTRZYGANIE NIEJASNOŚCI ———
+
+    # 0) Dopytanie przy niejasnej „przeszłości” bez pytania
+    if any_in(t, past_experience_words) and not any_in(t, dopigment_words + aftercare_words + duration_words + healing_words + ["czy", "mogę", "kiedy"]):
+        return reply_json(
+            "Świetnie 🌿 Czy pytasz o pielęgnację po zabiegu, czy raczej o dopigmentowanie (drugi etap po 6–8 tygodniach)? 💋"
         )
-        return jsonify({'reply': reply})
 
-    # === 6️⃣ AFTERCARE (pielęgnacja po zabiegu) ===
-    aftercare_words = ["moczyć", "myć", "smarować", "łuszczy", "swędzi", "goi", "piecze", "szczypie", "złuszcza", "maść", "balsam"]
-    if any(w in text_lower for w in aftercare_words):
-        if "brwi" in text_lower:
-            reply = (
-                "Nie mocz brwi przez pierwsze dni po zabiegu 🌿 "
-                "To normalne, jeśli lekko się łuszczą lub swędzą — to proces gojenia. "
-                "Stosuj maść zaleconą przez linergistkę i unikaj słońca przez ok. 10 dni ✨"
+    # 1) DOPIGMENTOWANIE (ma pierwszeństwo nad terminami)
+    if any_in(t, dopigment_words):
+        if any_in(t, ["kiedy", "mogę", "od kiedy", "po ilu"]):
+            return reply_json(
+                "Dopigmentowanie zaleca się wykonać między 6. a 8. tygodniem po głównym zabiegu 🌿 "
+                "W tym czasie pigment się stabilizuje i efekt będzie najrówniejszy 💋"
             )
-        elif "usta" in text_lower:
-            reply = (
-                "Po zabiegu ust 💋 skóra może być delikatnie napięta lub sucha. "
+        # Jeśli jednocześnie pojawiają się „terminy” i „dopigment” — najpierw reguła merytoryczna, potem delikatne CTA
+        if any_in(t, terms_triggers):
+            return reply_json(
+                f"Dopigmentowanie zwykle planujemy po 6–8 tygodniach od zabiegu 🌿 "
+                f"Jeśli chcesz, ustalimy dogodny termin telefonicznie: {PHONE} 💗"
+            )
+        # W pozostałych przypadkach eleganckie dopytanie
+        return reply_json(
+            "Czy chcesz ustalić, *kiedy* najlepiej wykonać dopigmentowanie (6–8 tygodni), czy od razu porozmawiać o terminie? 📅"
+        )
+
+    # 2) CENA (wykluczamy durację/gojenie)
+    if any_in(t, price_triggers) and not any_in(t, price_exclude):
+        if mentions_lips:
+            return reply_json(PRICE_LIST["usta"])
+        if mentions_brows:
+            return reply_json(PRICE_LIST["brwi"])
+        return reply_json("Nie mam tej pozycji w cenniku 🌸 — mogę pomóc w tematach brwi i ust permanentnych 💋")
+
+    # 3) MOCZENIE BRWI — pytanie „kiedy mogę/od kiedy mogę moczyć”
+    if moisten_brows_question:
+        return reply_json(
+            "Brwi możesz delikatnie moczyć dopiero, gdy wszystkie strupki się złuszczą 🌿 "
+            "Zazwyczaj po około 7–10 dniach od zabiegu. Do tego czasu unikaj sauny, basenu i ekspozycji na słońce ✨"
+        )
+
+    # 4) AFTERCARE (ogólne pytania pielęgnacyjne)
+    if any_in(t, aftercare_words):
+        if mentions_brows:
+            return reply_json(
+                "Po zabiegu brwi nie mocz ich przez pierwsze dni 🌿 "
+                "Lekka łuska lub swędzenie są normalne — to gojenie. "
+                "Stosuj maść zaleconą przez linergistkę i unikaj słońca ok. 10 dni ✨"
+            )
+        if mentions_lips:
+            return reply_json(
+                "Po zabiegu ust 💋 skóra może być delikatnie sucha. "
                 "Nawilżaj regularnie balsamem/maścią zaleconą przez linergistkę i unikaj gorących napojów przez kilka dni 🌿"
             )
-        else:
-            reply = (
-                "Po zabiegu 🌸 nie mocz pigmentowanego miejsca, stosuj maść zaleconą przez linergistkę i daj skórze czas — pigment ustabilizuje się w kolejnych tygodniach ✨"
-            )
-        return jsonify({'reply': reply})
-
-    # === 7️⃣ DOPRECYZOWANIE INTENCJI (np. "robiłam brwi tydzień temu") ===
-    if any(w in text_lower for w in ["robiłam", "miałam", "byłam"]) and not any(x in text_lower for x in ["czy", "mogę", "dopigment", "moczyć", "goić", "łuszczy", "smarować"]):
-        reply = (
-            "Świetnie 🌿 Czy pytasz, jak teraz dbać o brwi po zabiegu, "
-            "czy raczej chcesz je odświeżyć (dopigmentowanie)? 💋"
+        return reply_json(
+            "Po zabiegu 🌸 nie mocz pigmentowanego miejsca, stosuj zaleconą maść i daj skórze czas — "
+            "pigment ustabilizuje się w kolejnych tygodniach ✨"
         )
-        return jsonify({'reply': reply})
 
-    # === 8️⃣ TRWAŁOŚĆ EFEKTU ===
-    duration_keywords = ["utrzymuje", "utrzymują", "trwa", "trzyma się", "trzymają", "jak długo się trzyma"]
-    if any(w in text_lower for w in duration_keywords):
-        if "brwi" in text_lower:
-            reply = (
+    # 5) TRWAŁOŚĆ EFEKTU (2–3 lata) — przed gojeniem
+    if any_in(t, duration_words):
+        if mentions_brows:
+            return reply_json(
                 "Efekt makijażu permanentnego brwi utrzymuje się średnio 2–3 lata ✨ "
-                "Wiele zależy od rodzaju skóry, pielęgnacji i ekspozycji na słońce 🌿"
+                "Wpływ ma pielęgnacja, typ skóry i ekspozycja na słońce 🌿"
             )
-        elif "usta" in text_lower:
-            reply = (
+        if mentions_lips:
+            return reply_json(
                 "Makijaż permanentny ust utrzymuje się około 2 lat 💋 — "
-                "z czasem kolor może delikatnie zblednąć, ale można go odświeżyć dopigmentowaniem 🌸"
+                "z czasem kolor delikatnie blednie, można odświeżyć dopigmentowaniem 🌸"
             )
-        else:
-            reply = (
-                "Makijaż permanentny utrzymuje się średnio 2–3 lata 🌿 "
-                "Czas zależy od pielęgnacji, typu skóry i trybu życia ✨"
-            )
-        return jsonify({'reply': reply})
+        return reply_json(
+            "Makijaż permanentny najczęściej utrzymuje się 2–3 lata 🌿 — zależnie od pielęgnacji i typu skóry ✨"
+        )
 
-    # === 9️⃣ GOJENIE ===
-    healing_keywords = ["goi", "gojenie", "jak długo się goi", "kiedy się zagoi"]
-    if any(w in text_lower for w in healing_keywords):
-        if "brwi" in text_lower:
-            reply = (
-                "Po zabiegu brwi goją się zwykle 5–10 dni 🌿 "
-                "To normalne, że kolor może się zmieniać — pigment stabilizuje się w ciągu kilku tygodni ✨"
+    # 6) GOJENIE (ile trwa)
+    if any_in(t, healing_words):
+        if mentions_brows:
+            return reply_json(
+                "Brwi goją się zwykle 5–10 dni 🌿 "
+                "Kolor może się zmieniać — pigment stabilizuje się w kolejnych tygodniach ✨"
             )
-        elif "usta" in text_lower:
-            reply = (
+        if mentions_lips:
+            return reply_json(
                 "Usta goją się szybciej niż brwi 💋 — zazwyczaj 3–5 dni. "
-                "Po tym czasie pigment zaczyna się delikatnie wyrównywać 🌿"
+                "Początkowo kolor bywa intensywniejszy, później się uspokaja 🌿"
             )
-        else:
-            reply = "Zazwyczaj gojenie po makijażu permanentnym trwa około tygodnia 🌸"
-        return jsonify({'reply': reply})
+        return reply_json("Gojenie po makijażu permanentnym trwa zwykle około tygodnia 🌸")
 
-    # === 🔟 GPT fallback ===
+    # 7) LEKI (z wyjątkiem Izoteku)
+    if any_in(t, med_triggers):
+        if any_in(t, izotek_words):
+            return reply_json(
+                "Podczas kuracji Izotekiem nie wykonuje się makijażu permanentnego 🌿 "
+                "Zabieg planujemy po zakończeniu leczenia."
+            )
+        return reply_json(
+            "Jeśli przyjmujesz leki, najlepiej skontaktować się bezpośrednio z salonem, aby potwierdzić bezpieczeństwo zabiegu 🌸"
+        )
+
+    # 8) TERMINY / ZAPISY (na końcu, po wszystkich merytorycznych regułach)
+    if any_in(t, terms_triggers) or all_in(t, ["kiedy", "mogę"]):
+        return reply_json(f"Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸 Zadzwoń: {PHONE}")
+
+    # 9) DOPRECYZOWANIE, gdy pytanie ogólne „kiedy mogę” bez kontekstu
+    if has_question_intent and not (mentions_brows or mentions_lips) and not any_in(t, ["pmu", "makijaż permanentny"]):
+        return reply_json("Czy chodzi Ci o brwi czy usta? Podpowiem dokładnie, jak postąpić ✨")
+
+    # 10) Fallback — GPT (krótko, kobieco, bez medycznych porad)
     try:
         system_prompt = (
             "Jesteś Beauty Chat — inteligentnym asystentem salonu beauty. "
-            "Piszesz w przyjazny, ekspercki sposób. Odpowiadasz konkretnie, ale z klasą i kobiecą lekkością. "
-            "Używasz emotek z wyczuciem (💋✨🌿), maksymalnie 2–4 zdania. "
-            "Nie odpowiadasz na pytania niezwiązane z makijażem permanentnym brwi i ust. "
-            "Gdy rozmowa dotyczy decyzji lub obaw, możesz naturalnie zaprosić do kontaktu: 881 622 882. "
-            "Nie wspominaj o promocjach ani sprzedaży."
+            "Odpowiadasz krótko (2–4 zdania), kobieco i profesjonalnie. "
+            "Unikasz porad medycznych i tematów spoza PMU brwi/ust. "
+            "Gdy rozmowa dotyczy decyzji lub obaw, możesz naturalnie zaprosić do kontaktu telefonicznego: "
+            f"{PHONE}. Używaj emotek oszczędnie (💋✨🌿)."
         )
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.5,
-            max_tokens=600,
+            temperature=0.45,
+            max_tokens=350,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
-            ]
+            ],
         )
-        reply = completion.choices[0].message.content.strip()
+        text = completion.choices[0].message.content.strip()
+        return reply_json(text)
     except Exception as e:
-        reply = f"Ups! Coś poszło nie tak 💔 ({e})"
+        return reply_json(f"Ups! Coś poszło nie tak 💔 ({e})")
 
-    return jsonify({'reply': reply})
-
-
-# === Uruchomienie serwera ===
+# === Uruchomienie serwera (Render/localhost) ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=False)
+
 
 
 
