@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import os, random
 
-# === Inicjalizacja ===
+# === INICJALIZACJA ===
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
@@ -21,33 +21,33 @@ PRICE_LIST = {
 KNOWLEDGE = {
     "przeciwwskazania": [
         "Zabieg nie jest wykonywany w ciąży, podczas karmienia piersią, przy infekcjach, chorobach nowotworowych lub przyjmowaniu sterydów i retinoidów.",
-        "Przed zabiegiem nie pij kawy ani alkoholu — kofeina i alkohol rozrzedzają krew, przez co pigment może się gorzej przyjąć lub szybciej wypłukać 💋"
+        "Przed zabiegiem nie pij kawy ani alkoholu — kofeina i alkohol rozrzedzają krew i mogą utrudniać pigmentację oraz wpłynąć na trwałość efektu."
     ],
     "pielęgnacja": [
-        "Po zabiegu nie dotykaj, nie drap i nie zrywaj strupków. Skóra goi się ok. 7 dni, a kolor stabilizuje się po 30 dniach ✨",
-        "Unikaj słońca, sauny, basenu i intensywnego wysiłku przez minimum tydzień 🌿",
-        "Brwi po zabiegu przemywaj przegotowaną wodą 3–5 razy dziennie przez pierwsze 3 dni, potem delikatnie nawilżaj cienką warstwą preparatu 💧"
+        "Po zabiegu nie dotykaj, nie drap i nie zrywaj strupków. Skóra goi się około 7 dni, a kolor stabilizuje po 30 dniach.",
+        "Unikaj słońca, sauny, basenu i intensywnego wysiłku przez minimum tydzień.",
+        "Brwi po zabiegu przemywaj przegotowaną wodą 3–5 razy dziennie przez pierwsze 3 dni, potem delikatnie nawilżaj cienką warstwą preparatu."
     ],
     "techniki_brwi": [
         "Metoda pudrowa (Powder Brows) daje miękki, cieniowany efekt przypominający makijaż cieniem — idealna dla każdego typu skóry.",
-        "Metoda ombre tworzy delikatny gradient: jaśniejsze brwi u nasady i ciemniejsze na końcach, dla naturalnego efektu 3D ✨",
-        "Metoda łączona (Hybrid) to połączenie włosków z przodu i cienia w dalszej części brwi — naturalny, ale wyraźny efekt 💋",
+        "Metoda ombre tworzy delikatny gradient: jaśniejsze brwi u nasady i ciemniejsze na końcach, dla naturalnego efektu 3D.",
+        "Metoda łączona (Hybrid) łączy włoski z przodu z delikatnym cieniem w dalszej części brwi — naturalny, ale wyrazisty efekt.",
         "Nano Brows (pixelowa technika) to bardzo precyzyjne kropkowanie, które daje efekt hiperrealistycznych brwi."
     ],
     "techniki_usta": [
-        "Lip Blush to delikatne podkreślenie naturalnego koloru ust — efekt świeżych, lekko zaróżowionych warg 💋",
-        "Full Lip Color zapewnia jednolite, pełne wypełnienie kolorem, przypominające klasyczną szminkę 💄",
-        "Kontur ust (Lip Liner) pozwala wyrównać kształt i delikatnie podkreślić linię warg, zachowując naturalność ✨"
+        "Lip Blush to delikatne podkreślenie naturalnego koloru ust — efekt świeżych, lekko zaróżowionych warg.",
+        "Full Lip Color zapewnia jednolite, pełne wypełnienie kolorem, przypominające klasyczną szminkę.",
+        "Kontur ust (Lip Liner) pozwala wyrównać kształt i subtelnie podkreślić linię warg, zachowując naturalność."
     ],
     "trwalosc": [
-        "Efekt makijażu permanentnego utrzymuje się średnio 1–3 lata. Po tym czasie zalecane jest odświeżenie pigmentu 💋",
+        "Efekt makijażu permanentnego utrzymuje się średnio 1–3 lata. Po tym czasie zalecane jest odświeżenie pigmentu.",
         "Zbyt szybkie blaknięcie może wynikać z tłustej cery, ekspozycji na słońce lub nieprzestrzegania zaleceń pozabiegowych.",
-        "Trwałość zależy od pielęgnacji i indywidualnych procesów regeneracji skóry 🌿"
+        "Trwałość zależy od pielęgnacji, typu skóry i indywidualnych procesów regeneracji."
     ],
     "fakty_mity": [
-        "Zabieg nie jest bolesny — dzięki znieczuleniu większość klientek czuje jedynie lekkie szczypanie ✨",
+        "Zabieg nie jest bolesny — dzięki znieczuleniu większość klientek czuje tylko lekkie szczypanie.",
         "Makijaż permanentny nie powoduje wypadania włosków — pigment wprowadzany jest bardzo płytko.",
-        "To nie tatuaż — pigment z czasem naturalnie blednie, dlatego po roku lub dwóch warto zrobić odświeżenie 💋"
+        "To nie tatuaż — pigment z czasem naturalnie blednie, dlatego po roku lub dwóch warto zrobić odświeżenie."
     ]
 }
 
@@ -62,7 +62,7 @@ INTENT_KEYWORDS = {
         "strup", "łuszcz", "smarowac", "złuszczanie"
     ],
     "techniki_brwi": [
-        "brwi", "ombre", "pudrow", "powder", "microblading", "hybrid", "pixel", "nano", "metoda pudrowa", "metoda ombre"
+        "brwi", "ombre", "pudrow", "powder", "microblading", "hybrid", "pixel", "nano"
     ],
     "techniki_usta": [
         "usta", "lip", "blush", "kontur", "liner", "full lip", "aquarelle", "ust", "wargi"
@@ -75,13 +75,20 @@ INTENT_KEYWORDS = {
     ]
 }
 
-INTENT_PRIORITIES = ["przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"]
+INTENT_PRIORITIES = [
+    "przeciwwskazania",
+    "pielęgnacja",
+    "techniki_brwi",
+    "techniki_usta",
+    "trwalosc",
+    "fakty_mity"
+]
 
 FOLLOWUP_QUESTIONS = {
-    "techniki_brwi": "Czy pytasz o metody makijażu brwi, jak pudrowa czy ombre? 🌿",
-    "techniki_usta": "Czy chodzi Ci o techniki ust, np. Lip Blush albo Full Lip Color? 💋",
-    "trwalosc": "Czy pytasz, bo dopiero rozważasz zabieg, czy masz już wykonany i chcesz wiedzieć, jak długo efekt się utrzymuje? ✨",
-    "pielęgnacja": "Czy chodzi Ci o pielęgnację po zabiegu, czy o przygotowanie przed pierwszym PMU? 💫"
+    "techniki_brwi": "Czy pytasz o metody makijażu brwi, jak pudrowa czy ombre?",
+    "techniki_usta": "Czy chodzi Ci o techniki ust, np. Lip Blush albo Full Lip Color?",
+    "trwalosc": "Czy pytasz, bo dopiero rozważasz zabieg, czy masz już wykonany i chcesz wiedzieć, jak długo efekt się utrzymuje?",
+    "pielęgnacja": "Czy chodzi Ci o pielęgnację po zabiegu, czy o przygotowanie przed pierwszym PMU?"
 }
 
 # === SESJE ===
@@ -103,20 +110,33 @@ def start_message():
 
 # === FUNKCJE POMOCNICZE ===
 def detect_intent(text):
-    matched = []
+    scores = {}
     for intent, words in INTENT_KEYWORDS.items():
-        if any(w in text for w in words):
-            matched.append(intent)
-    if not matched:
+        score = sum(1 for w in words if w in text)
+        if score > 0:
+            scores[intent] = score
+    if not scores:
         return None
-    for priority in INTENT_PRIORITIES:
-        if priority in matched:
-            return priority
-    return matched[0]
+    best_intent = max(scores, key=scores.get)
+    tied = [i for i, s in scores.items() if s == scores[best_intent]]
+    if len(tied) > 1:
+        for p in INTENT_PRIORITIES:
+            if p in tied:
+                return p
+    return best_intent
 
-def random_emojis(n=3):
-    all_emojis = ["💋", "✨", "🌿", "💄", "🌸"]
-    return " ".join(random.sample(all_emojis, n))
+def get_emojis_for_intent(intent):
+    mapping = {
+        "przeciwwskazania": ["🌿", "💋"],
+        "pielęgnacja": ["🌿", "✨"],
+        "techniki_brwi": ["✨", "🌸"],
+        "techniki_usta": ["💋", "💄"],
+        "trwalosc": ["💄", "✨"],
+        "fakty_mity": ["🌸", "✨"]
+    }
+    if intent in mapping:
+        return " ".join(random.sample(mapping[intent], min(2, len(mapping[intent]))))
+    return random.choice(["💋", "✨", "🌿"])
 
 # === GŁÓWNY ENDPOINT CHATU ===
 @app.route('/chat', methods=['POST'])
@@ -164,10 +184,7 @@ def chat():
             SESSION_DATA[user_ip]["asked_context"] = True
             return jsonify({'reply': FOLLOWUP_QUESTIONS[intent]})
         reply = random.choice(KNOWLEDGE[intent])
-        # dodaj emotki co 2 wiadomości
-        if count % 2 == 0:
-            reply += f" {random_emojis(3)}"
-        # numer telefonu maks. co 3 wiadomość i nigdy dwa razy pod rząd
+        reply += " " + get_emojis_for_intent(intent)
         if count % 3 == 0 and not SESSION_DATA[user_ip]["last_phone"]:
             reply += random.choice([
                 "\n\nJeśli chcesz, mogę pomóc dobrać termin 💋 881 622 882",
@@ -184,7 +201,7 @@ def chat():
         "Odpowiadasz konkretnie, z klasą i kobiecą lekkością. "
         "Nie wymyślasz nowych informacji, korzystasz tylko z wiedzy o makijażu permanentnym brwi i ust. "
         "Nie wspominaj o promocjach. Nie powtarzaj się. "
-        "Używaj emotek z wyczuciem (💋✨🌿) i pisz maksymalnie 2–4 zdania."
+        "Używaj maksymalnie dwóch emotek (💋✨🌿💄🌸) z wyczuciem."
     )
 
     try:
