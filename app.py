@@ -210,9 +210,9 @@ def chat():
     intent = new_intent or session.get("last_intent") 
     
     
-    # === 1. OBSŁUGA CEN, CZASU I TERMINÓW (PRIORYTET 1) ===
+    # === 1. OBSŁUGA CEN, CZASU I REGUŁY KRYTYCZNE (PRIORYTET 1) ===
     
-    # === REGUŁA: CZAS TRWANIA ZABIEGU (Wysoki priorytet, bo może użyć słowa 'ile') ===
+    # === REGUŁA: CZAS TRWANIA ZABIEGU ===
     if any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]) and not any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
         reply = add_phone_once(reply, session, count)
@@ -226,7 +226,7 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: CENNIK (Wykonuje się, jeśli nie było pytania o 'ile trwa') ===
+    # === REGUŁA: CENNIK ===
     elif any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
@@ -240,7 +240,7 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === NOWA REGUŁA: BÓL/POTRZEBNE (PRIORYTET ZARAZ ZA PMU OCZU) ===
+    # === REGUŁA: BÓL/POTRZEBNE ===
     elif any(w in text_lower for w in ["bol", "ból", "potrzebne", "boli", "czy boli"]):
         reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
         reply = add_phone_once(reply, session, count)
@@ -248,30 +248,33 @@ def chat():
         return jsonify({'reply': reply})
 
 
-    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - KATEGORYCZNY ZAKAZ OSÓB TOWARZYSZĄCYCH ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem"]) \
-        and any(w in text_lower for w in ["mogę", "przyjść", "na zabieg", "z"]): 
+    # === 1.5 REGUŁA LOGISTYCZNA (POPRAWIONY PRIORYTET I SŁOWA KLUCZOWE) ===
+    elif any(w in text_lower for w in [
+        "dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", 
+        "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem",
+        "z mezem", "z dzieckiem", "z psem", "moge przyjsc", "z kim moge", "moge przyjść" # Wzmocnione słowa kluczowe
+    ]): 
         reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
     # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE ORAZ TERMINY (TERAZ NIŻSZY PRIORYTET) ===
     
-    # === REGUŁA: UMÓWIENIE KONSULTACJI (Słowa kluczowe: 'umówić', 'termin', 'konsultacja') ===
+    # === REGUŁA: UMÓWIENIE KONSULTACJI ===
     elif any(w in text_lower for w in ["umówić", "termin", "zapis", "wolne", "rezerwacja"]) and any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
         # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
         reply = f"Chętnie umówimy Panią na **bezpłatną konsultację**! Prosimy o kontakt telefoniczny z recepcją: {PHONE_NUMBER}, aby znaleźć dogodny dla Pani termin spotkania. Zarezerwuje Pani około 1 godziny 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: UMÓWIENIE ZABIEGU (Słowa kluczowe: 'umówić', 'termin', 'zabieg' lub BRAK słowa 'konsultacja') ===
+    # === REGUŁA: UMÓWIENIE ZABIEGU ===
     elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "zabieg"]):
         # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
         reply = f"Chętnie umówimy Panią na **zabieg**! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Pani kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ (Słowa kluczowe: 'konsultacja' bez 'terminu') ===
+    # === REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ ===
     elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
         reply = f"Oferujemy bezpłatne konsultacje, które trwają około 1 godziny. Jest to idealny czas na omówienie wszelkich obaw i dobranie metody. Czy chciałaby Pani umówić termin? Możemy to zrobić telefonicznie: {PHONE_NUMBER} 🌿."
         update_history(session, user_message, reply)
@@ -329,7 +332,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
