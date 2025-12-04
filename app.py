@@ -171,7 +171,6 @@ def emojis_for(intent):
 
 def add_phone_once(reply, session, count):
     if count % 3 == 0 and not session["last_phone"]:
-        # Usunięto ** z formatowania numeru telefonu, aby nie wyświetlały się gwiazdki
         reply += random.choice(PHONE_MESSAGES).replace('**', '') 
         session["last_phone"] = True
     else:
@@ -199,7 +198,6 @@ def start_message():
         "message_count": 0, "last_intent": None, "asked_context": False, 
         "last_phone": False, "history": deque()
     }
-    # Zmieniona persona na bardziej "salonową"
     welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
@@ -242,14 +240,12 @@ def chat():
         return jsonify({'reply': reply})
 
     if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
-        # Zmieniona persona: użycie formy "my" i "salon"
         reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
     
     # === 1.5 REGUŁA LOGISTYCZNA (Dzieci, Zwierzęta, Goście) ===
     if any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca"]):
-        # Zmieniona persona: użycie "Prosimy"
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -264,12 +260,25 @@ def chat():
         
         # W przypadku innych, prostych intencji (np. pielęgnacja, trwałość) użyj prostej reguły
         else:
-            if intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
+            # === NOWA LOGIKA FALLBACKU PO PYTANIU DOPYTUJĄCYM ===
+            # Sprawdzenie, czy jest to potwierdzenie po tym, jak bot zadał pytanie dopytujące
+            is_confirmation = any(word in text_lower for word in ["tak", "dokładnie", "oczywiście", "zgadza się", "dobrze"])
+            
+            if session["asked_context"] and is_confirmation:
+                # Jeśli użytkownik potwierdza, że pyta o poprzedni temat, idź prosto do GPT!
+                # GPT użyje historii konwersacji (pytanie + potwierdzenie) do wygenerowania pełnej odpowiedzi.
+                session["asked_context"] = False # Wyłącz flagę, aby nie zadawać pytania ponownie
+                session["last_intent"] = intent # Upewnienie się, że intencja jest zachowana dla historii
+                pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
+            
+            # === STARA LOGIKA ZADAWANIA PYTAŃ ===
+            elif intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
                 session["asked_context"] = True
                 reply = FOLLOWUP_QUESTIONS[intent]
                 update_history(session, user_message, reply)
                 return jsonify({'reply': reply})
             
+            # === STARA LOGIKA LOSOWEJ ODPOWIEDZI (Używana, gdy nie ma kontekstu/potwierdzenia) ===
             session["last_intent"] = intent
             session["asked_context"] = False
             reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
@@ -292,7 +301,7 @@ def chat():
     2. Ton: **Bardziej profesjonalny, naturalny i ludzki.** Odpowiadasz w imieniu salonu, zachowując ekspercki, ale ciepły i naturalny styl. **Unikaj formy "ja"**. Zamiast tego używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     3. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
     4. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
-    5. **Formatowanie:** Używaj **pogrubień** w tekście (nie używaj symboli *). Używaj list punktowanych dla lepszej czytelności.
+    5. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
     6. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację. 
     7. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
     """
@@ -307,7 +316,7 @@ def chat():
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.8, # Lekko zwiększone, by zwiększyć kreatywność i zmniejszyć powtarzalność
+            temperature=0.8, 
             max_tokens=600,
             messages=messages
         )
@@ -316,7 +325,8 @@ def chat():
         reply = add_phone_once(reply, session, count)
         
     except Exception as e:
-        reply = f"Ups! Coś poszło nie tak 💔 Spróbuj ponownie. ({e})"
+        # === ULEPSZONA OBSŁUGA BŁĘDÓW ===
+        reply = f"Przepraszamy, wystąpił chwilowy błąd komunikacji z naszym systemem. Prosimy o kontakt telefoniczny pod numerem {PHONE_NUMBER} lub spróbuj za chwilę 💔."
 
     update_history(session, user_message, reply)
     return jsonify({'reply': reply})
