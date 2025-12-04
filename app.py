@@ -7,7 +7,7 @@ from collections import deque
 # === DANE SALONU I WIEDZA (PRZENIESIONE Z knowledgeBase.ts) ===
 # TA WIEDZA JEST PRZEKAZYWANA DO GPT W FALLBACKU!
 PMU_FULL_KNOWLEDGE = """
-Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Twoja wiedza jest techniczna, medyczna i praktyczna, ale przekazujesz ją w sposób zrozumiały i empatyczny dla klientki.
+Jesteś **ekspertką/ekspertem salonu** z 20-letnim doświadczeniem w mikropigmentacji. Wypowiadasz się w imieniu salonu, używając formy "nasz salon," "eksperci robią," "klientka musi." Twoja wiedza jest techniczna, medyczna i praktyczna, ale przekazujesz ją w sposób zrozumiały i empatyczny dla klientki.
 
 DANE SALONU:
 - Adres: ul. Junikowska 9
@@ -66,31 +66,31 @@ api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 client = OpenAI(api_key=api_key)
 
-# === CENNIK ===
+# === CENNIK (Usunięto gwiazdki **) ===
 PRICE_LIST = {
-    "brwi": "Makijaż permanentny brwi kosztuje **1200 zł** — dopigmentowanie jest w cenie ✨",
-    "usta": "Makijaż permanentny ust kosztuje **1200 zł** — dopigmentowanie jest w cenie 💋",
-    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar **350 zł** 🌿"
+    "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
+    "usta": "Makijaż permanentny ust kosztuje 1200 zł — dopigmentowanie jest w cenie 💋",
+    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar 350 zł 🌿"
 }
 # === KONFIGURACJA TELEFONU ===
 PHONE_NUMBER = "881 622 882"
 PHONE_MESSAGES = [
-    f"\n\nJeśli wolisz porozmawiać o szczegółach, zadzwoń do nas: **{PHONE_NUMBER}** 📞",
-    f"\n\nChętnie odpowiemy na bardziej złożone pytania telefonicznie! **{PHONE_NUMBER}** 🌿",
-    f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: **{PHONE_NUMBER}** 🌸"
+    f"\n\nJeśli wolisz porozmawiać o szczegółach, zadzwoń do nas: {PHONE_NUMBER} 📞",
+    f"\n\nChętnie odpowiemy na bardziej złożone pytania telefonicznie! {PHONE_NUMBER} 🌿",
+    f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: {PHONE_NUMBER} 🌸"
 ]
 
-# === BAZA WIEDZY (Tylko proste, szybkie odpowiedzi - Przeciwwskazania przenosimy do GPT!) ===
+# === BAZA WIEDZY (Tylko proste, szybkie odpowiedzi - Usunięto gwiazdki **) ===
 KNOWLEDGE = {
     "pielęgnacja": [
         "Kluczem jest nie drapać i nie zrywać strupków, oraz unikać słońca i sauny przez 2 tygodnie ✨.",
         "W pierwszych dniach zalecamy delikatne przemywanie przegotowaną wodą, a potem minimalne nawilżanie 🌿."
     ],
     "techniki_brwi": [
-        "Wybór zależy od typu skóry: *Powder Brows* (cieniowanie) jest idealna dla każdego, a *Microblading* jest odradzany przy skórze tłustej 🌸."
+        "Wybór zależy od typu skóry: Powder Brows (cieniowanie) jest idealna dla każdego, a Microblading jest odradzany przy skórze tłustej 🌸."
     ],
     "techniki_usta": [
-        "Oferujemy *Lip Blush* (akwarelowy, naturalny efekt) lub *Full Lip Color* (efekt szminki) 💋."
+        "Oferujemy Lip Blush (akwarelowy, naturalny efekt) lub Full Lip Color (efekt szminki) 💋."
     ],
     "trwalosc": [
         "Efekt utrzymuje się zwykle 1–3 lata, zależy to od pielęgnacji i fototypu skóry ✨.",
@@ -100,7 +100,7 @@ KNOWLEDGE = {
     ],
     # USUNIĘTO "przeciwwskazania" z tej listy, aby zawsze trafiły do GPT
     "przeciwwskazania": [
-         "Twoje pytanie jest bardzo ważne. O wszystkie szczegóły dotyczące przeciwwskazań zapytaj naszego eksperta — przełączam na bardziej szczegółową odpowiedź. 🌿"
+         "Twoje pytanie jest bardzo ważne. O wszystkie szczegóły dotyczące przeciwwskazań zapytaj naszego eksperta — przełączamy na bardziej szczegółową odpowiedź. 🌿"
     ]
 }
 
@@ -171,7 +171,8 @@ def emojis_for(intent):
 
 def add_phone_once(reply, session, count):
     if count % 3 == 0 and not session["last_phone"]:
-        reply += random.choice(PHONE_MESSAGES)
+        # Usunięto ** z formatowania numeru telefonu, aby nie wyświetlały się gwiazdki
+        reply += random.choice(PHONE_MESSAGES).replace('**', '') 
         session["last_phone"] = True
     else:
         session["last_phone"] = False
@@ -198,7 +199,8 @@ def start_message():
         "message_count": 0, "last_intent": None, "asked_context": False, 
         "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego brwi i ust. Chętnie doradzę Ci w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸"
+    # Zmieniona persona na bardziej "salonową"
+    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -217,7 +219,7 @@ def chat():
         }
 
     if not user_message:
-        reply = 'Napisz coś, żebym mogła Ci pomóc 💬'
+        reply = 'Napisz coś, żebym mogła pomóc 💬'
         update_history(SESSION_DATA[user_ip], user_message, reply)
         return jsonify({'reply': reply})
 
@@ -240,17 +242,24 @@ def chat():
         return jsonify({'reply': reply})
 
     if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
-        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy mogę zaproponować Ci kontakt telefoniczny? **{PHONE_NUMBER}** 🌸"
+        # Zmieniona persona: użycie formy "my" i "salon"
+        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
-
+    
+    # === 1.5 REGUŁA LOGISTYCZNA (Dzieci, Zwierzęta, Goście) ===
+    if any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca"]):
+        # Zmieniona persona: użycie "Prosimy"
+        reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
     # === 2. BAZA WIEDZY (Jeśli znaleziono intencję) ===
-    # Jeśli intencja to przeciwwskazania LUB jeśli nie ma losowych odpowiedzi w KNOWLEDGE
     if intent and intent in KNOWLEDGE:
         
         # Jeśli intencja to PRZECIWWSKAZANIA, ZAWSZE PRZEJDŹ DO GPT (FALLBACK 3)
         if intent == "przeciwwskazania":
-             # Użyjemy Fallback GPT, aby dać pełną, logiczną odpowiedź
              pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
         
         # W przypadku innych, prostych intencji (np. pielęgnacja, trwałość) użyj prostej reguły
@@ -279,12 +288,13 @@ def chat():
     {PMU_FULL_KNOWLEDGE}
 
     INSTRUKCJE SPECJALNE DLA MODELU:
-    1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadaj w języku polskim.
-    2. Ton: **Profesjonalny, empatyczny, budujący zaufanie.** Bądź miła i używaj emotek z umiarem.
-    3. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU powyżej. **Szczególną uwagę zwróć na sekcję PRZECIWWSKAZANIA, gdy użytkownik pyta o leki, choroby, ciążę, kawę lub alkohol.**
-    4. **Formatowanie:** Używaj formatowania Markdown (pogrubienia **kluczowych terminów**, listy punktowane).
-    5. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację. 
-    6. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
+    1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
+    2. Ton: **Bardziej profesjonalny, naturalny i ludzki.** Odpowiadasz w imieniu salonu, zachowując ekspercki, ale ciepły i naturalny styl. **Unikaj formy "ja"**. Zamiast tego używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
+    3. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
+    4. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
+    5. **Formatowanie:** Używaj **pogrubień** w tekście (nie używaj symboli *). Używaj list punktowanych dla lepszej czytelności.
+    6. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację. 
+    7. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
     """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -297,7 +307,7 @@ def chat():
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.7, 
+            temperature=0.8, # Lekko zwiększone, by zwiększyć kreatywność i zmniejszyć powtarzalność
             max_tokens=600,
             messages=messages
         )
