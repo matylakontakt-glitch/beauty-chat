@@ -56,16 +56,16 @@ PHONE_MESSAGES = [
     f"\n\nChętnie dobierzemy termin telefonicznie: {PHONE_NUMBER} 🌸"
 ]
 
-# === INTENCJE (bez zmian) ===
+# === INTENCJE ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\bciąż\w*", r"\bw\s+ciąży\b",
-        r"\balkohol\w*", r"\bkaw\w*", r"\bpić\w*\s+kaw\w*", r"\bwino\w*", r"\bpiwo\w*",
+        r"\balkohol\w*", r"\bkaw\w*", r"\bpić\w*\s+kaw\w*", r"\bpic\w*\s+kaw\w*", r"\bwino\w*", r"\bpiwo\w*",
         r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
     ],
     "pielęgnacja": [
-        r"\bpielęgnac\w*", r"\bgojenie\w*", r"\bpo\s+zabiegu\w*", r"\bstrup\w*",
-        r"\błuszcz\w*", r"\bzłuszcz\w*", r"\bsmarow\w*", r"\bmyć\w*", r"\bprzed\s+zabiegiem\w*"
+        r"\bpielęgnac\w*", r"\bgojenie\w*", r"\bpo\s+zabiegu\b", r"\bstrup\w*", r"\błuszcz\w*", r"\bzłuszcz\w*",
+        r"\bsmarow\w*", r"\bmyć\w*", r"\bprzed\s+zabiegiem\b"
     ],
     "techniki_brwi": [r"\bbrwi\w*", r"\bpowder\w*", r"\bpudrow\w*", r"\bombre\w*"],
     "techniki_usta": [r"\busta\w*", r"\bust\w*", r"\blip\w*", r"\bkontur\w*", r"\bblush\w*", r"\bfull\s+lip\w*"],
@@ -154,14 +154,22 @@ def chat():
     count = session["message_count"]
 
     # === REGUŁA: OSOBY TOWARZYSZĄCE / DZIECI / ZWIERZĘTA ===
-    if any(w in text_lower for w in [
-        "dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot",
-        "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem",
-        "z mezem", "z dzieckiem", "z psem", "moge przyjsc", "moge przyjść", "z kim moge"
-    ]):
+    if re.search(
+        r"\b("
+        r"m[aą]ż|m[eę]żem|maz|z\s+m[eę]żem|"
+        r"partner\w*|"
+        r"przyjaci[oó]ł\w*|koleżank\w*|"
+        r"dzieck\w*|dzieci\w*|"
+        r"z\s+dzieckiem|z\s+dzieci|"
+        r"zwierzak\w*|pies\w*|kot\w*|"
+        r"osob\w*\s+towarzysz\w*|towarzysz\w*|"
+        r"razem|sama|samemu|mog[eę]\s+przyj\w*"
+        r")\b",
+        text_lower
+    ):
         reply = (
             "Podczas zabiegu dbamy o pełne skupienie, sterylność i komfort. "
-            "Prosimy o przyjście **bez osób towarzyszących (również dzieci)** oraz **bez zwierząt**. "
+            "Prosimy o przyjście **bez osób towarzyszących (również dzieci, partnerów i przyjaciółek)** oraz **bez zwierząt**. "
             "W gabinecie może przebywać wyłącznie osoba, która wykonuje zabieg 🌿."
         )
         update_history(session, user_message, reply)
@@ -191,7 +199,7 @@ def chat():
     # === REGUŁA: UMÓWIENIE ZABIEGU (z poprawką „po/przed zabiegu”) ===
     if (
         any(w in text_lower for w in ["umówić", "zapis", "wolne", "rezerwacja"]) or
-        ("zabieg" in text_lower and not any(p in text_lower for p in ["po zabiegu", "przed zabiegiem", "po zabiegu?", "przed zabiegiem ", "po zabiegu "]))
+        ("zabieg" in text_lower and not any(p in text_lower for p in ["po zabiegu", "przed zabiegiem"]))
     ):
         reply = f"Chętnie umówimy Panią na **zabieg**! Najlepiej skontaktować się z salonem, aby dobrać dogodny termin: {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
@@ -227,6 +235,7 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+
 
 
 
