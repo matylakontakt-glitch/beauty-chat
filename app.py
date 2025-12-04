@@ -81,12 +81,6 @@ PHONE_MESSAGES = [
 ]
 
 # === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte) ===
-KNOWLEDGE = {
-    "pielęgnacja": [], "techniki_brwi": [], "techniki_usta": [], 
-    "trwalosc": [], "fakty_mity": [], "przeciwwskazania": []
-}
-
-# === SŁOWA KLUCZOWE (BEZ ZMIAN) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąża\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
@@ -212,8 +206,22 @@ def chat():
     
     # === 1. OBSŁUGA CEN, CZASU I REGUŁY KRYTYCZNE (PRIORYTET 1) ===
     
+    # === NOWA REGUŁA: CZAS GOJENIA ===
+    if any(w in text_lower for w in ["ile go", "jak dlugo sie go", "czas gojenia", "gojenie trwa", "goi się"]):
+        reply = "Pełny proces gojenia dzieli się na etapy: **Faza Sączenia** (Dni 1-3) oraz **Łuszczenie się naskórka** (Dni 4-10, pojawiają się mikrostrupki, których nie wolno zdrapywać!). Pełna **stabilizacja koloru** następuje po około **28 dniach** (cykl odnowy naskórka). ✨"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    # === NOWA REGUŁA: ADRES/LOKALIZACJA ===
+    elif any(w in text_lower for w in ["gdzie", "adres", "lokalizacja", "dojazd"]):
+        reply = "Nasz salon znajduje się pod adresem: **ul. Junikowska 9** 🌸. Zapraszamy od poniedziałku do piątku w godzinach 09:00 - 19:00."
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
     # === REGUŁA: CZAS TRWANIA ZABIEGU ===
-    if any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]) and not any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
+    elif any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]) and not any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -249,10 +257,11 @@ def chat():
 
 
     # === 1.5 REGUŁA LOGISTYCZNA (POPRAWIONY PRIORYTET I SŁOWA KLUCZOWE) ===
+    # Reguła musi być tu, aby wyprzedzić reguły rezerwacji
     elif any(w in text_lower for w in [
         "dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", 
         "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem",
-        "z mezem", "z dzieckiem", "z psem", "moge przyjsc", "z kim moge", "moge przyjść" # Wzmocnione słowa kluczowe
+        "z mezem", "z dzieckiem", "z psem", "moge przyjsc", "z kim moge", "moge przyjść" 
     ]): 
         reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
         update_history(session, user_message, reply)
@@ -332,7 +341,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
