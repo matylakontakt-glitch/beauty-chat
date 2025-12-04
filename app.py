@@ -290,6 +290,7 @@ def chat():
     8. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście.
     9. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
     10. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę, podaj ją, używając danych z sekcji CENNIK w WIEDZY PMU. TYLKO w sprawie rezerwacji terminu lub jeśli pytania dot. innych szczegółów logistycznych, zachęcaj do kontaktu telefonicznego: {PHONE_NUMBER}.
+    11. **ANGAAŻOWANIE (Opcjonalne):** Po udzieleniu wyczerpującej odpowiedzi, model **może** (ale nie musi) zasugerować kolejny logiczny temat lub zadać delikatne, otwarte pytanie związane z kontekstem. Rób to tylko wtedy, gdy czujesz, że Klientka potrzebuje dalszej pomocy lub kierunku, np. po omówieniu ceny zapytaj o **metodę** lub po omówieniu gojenia zapytaj o **przeciwwskazania**. To ma budować płynność rozmowy, a nie być sztywnym wymogiem.
     """
 
     messages = [{"role": "system", "content": system_prompt}]
