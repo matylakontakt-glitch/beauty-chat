@@ -259,8 +259,9 @@ def chat():
         
     
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): 
-        reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
+    # Zmieniona, aby kategorycznie wykluczyć wszystkie osoby towarzyszące.
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank"]): 
+        reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w trakcie trwania zabiegu. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -316,7 +317,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
