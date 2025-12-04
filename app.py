@@ -210,26 +210,28 @@ def chat():
         session["last_intent"] = new_intent
     intent = new_intent or session.get("last_intent") 
     
-    # === 1. OBSŁUGA CEN I TERMINÓW (PRIORYTET 1) ===
-    if any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
+    
+    # === 1. OBSŁUGA CEN, CZASU I TERMINÓW (PRIORYTET 1) ===
+    
+    # === REGUŁA: CZAS TRWANIA ZABIEGU (Wysoki priorytet, bo może użyć słowa 'ile') ===
+    if any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]):
+        reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    # === REGUŁA: CENNIK (Wykonuje się, jeśli nie było pytania o 'ile trwa') ===
+    elif any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === REGUŁA: CZAS TRWANIA ZABIEGU ===
-    elif any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]):
-        reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
-        reply = add_phone_once(reply, session, count)
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
-
-
     # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE MAJĄ PIERWSZEŃSTWO PRZED ZABIEGIEM ===
     elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
         # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
-        reply = f"Oferujemy bezpłatne konsultacje. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
+        reply = f"Oferujemy bezpłatne konsultacje, które trwają **około 1 godziny**. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
