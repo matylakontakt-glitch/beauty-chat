@@ -239,9 +239,16 @@ def chat():
         reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach**, aby zapewnić najwyższą jakość i specjalizację w tych obszarach. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
+        
+    # === NOWA REGUŁA: BÓL/POTRZEBNE (PRIORYTET ZARAZ ZA PMU OCZU) ===
+    elif any(w in text_lower for w in ["bol", "ból", "potrzebne", "boli", "czy boli"]):
+        reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
 
-    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - WZMOCNIONA ORAZ PRZESUNIĘTA NA WYŻSZY PRIORYTET ===
-    # Zabezpieczenie przed regułami rezerwacji, które mogą mieć wspólne słowa (np. "zabieg")
+
+    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - KATEGORYCZNY ZAKAZ OSÓB TOWARZYSZĄCYCH ===
     elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem"]) \
         and any(w in text_lower for w in ["mogę", "przyjść", "na zabieg", "z"]): 
         reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
