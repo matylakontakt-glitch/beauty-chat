@@ -66,7 +66,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 client = OpenAI(api_key=api_key)
 
-# === CENNIK (Usunięto gwiazdki **) ===
+# === CENNIK ===
 PRICE_LIST = {
     "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
     "usta": "Makijaż permanentny ust kosztuje 1200 zł — dopigmentowanie jest w cenie 💋",
@@ -80,30 +80,13 @@ PHONE_MESSAGES = [
     f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: {PHONE_NUMBER} 🌸"
 ]
 
-# === BAZA WIEDZY (Tylko proste, szybkie odpowiedzi - Usunięto gwiazdki **) ===
+# === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte - nie używamy już prostych odpowiedzi) ===
 KNOWLEDGE = {
-    "pielęgnacja": [
-        "Kluczem jest nie drapać i nie zrywać strupków, oraz unikać słońca i sauny przez 2 tygodnie ✨.",
-        "W pierwszych dniach zalecamy delikatne przemywanie przegotowaną wodą, a potem minimalne nawilżanie 🌿."
-    ],
-    "techniki_brwi": [
-        "Wybór zależy od typu skóry: Powder Brows (cieniowanie) jest idealna dla każdego, a Microblading jest odradzany przy skórze tłustej 🌸."
-    ],
-    "techniki_usta": [
-        "Oferujemy Lip Blush (akwarelowy, naturalny efekt) lub Full Lip Color (efekt szminki) 💋."
-    ],
-    "trwalosc": [
-        "Efekt utrzymuje się zwykle 1–3 lata, zależy to od pielęgnacji i fototypu skóry ✨.",
-    ],
-    "fakty_mity": [
-        "Ból jest minimalny, ponieważ stosujemy znieczulenie lidokainą. PMU jest półtrwały 🌸.",
-    ],
-    "przeciwwskazania": [
-         "Twoje pytanie jest bardzo ważne. O wszystkie szczegóły dotyczące przeciwwskazań zapytaj naszego eksperta — przełączamy na bardziej szczegółową odpowiedź. 🌿"
-    ]
+    "pielęgnacja": [], "techniki_brwi": [], "techniki_usta": [], 
+    "trwalosc": [], "fakty_mity": [], "przeciwwskazania": []
 }
 
-# === SŁOWA KLUCZOWE ===
+# === SŁOWA KLUCZOWE (BEZ ZMIAN) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
@@ -132,11 +115,9 @@ INTENT_PRIORITIES = [
     "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
 
-FOLLOWUP_QUESTIONS = {
-    # Pytania dopytujące tylko dla technik
-    "techniki_brwi": "Czy pytasz o metody brwi (Powder vs Ombre)?",
-    "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?"
-}
+# === USUNIĘCIE PYTAŃ DOPYTUJĄCYCH! ===
+# Zamiast tego, wszystkie intencje trafiają prosto do GPT po ekspercką, kontekstową odpowiedź.
+# FOLLOWUP_QUESTIONS = {} 
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
@@ -197,7 +178,7 @@ def start_message():
         "message_count": 0, "last_intent": None, "asked_context": False, 
         "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
+    welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -228,28 +209,12 @@ def chat():
     new_intent = detect_intent(text_lower)
     
     # === LOGIKA ZARZĄDZANIA INTENCJĄ ===
+    # Teraz intencja tylko przechodzi dalej, bez aktywowania flagi 'asked_context'
     if new_intent and new_intent != session["last_intent"]:
-        session["asked_context"] = False
         session["last_intent"] = new_intent
-    # Ta linia musi być tutaj, aby obsłużyć przypadek, gdy klient odpowiada na pytanie dopytujące!
     intent = new_intent or session.get("last_intent") 
     
-    # --- LOGIKA DLA NAPRAWY BŁĘDU POTWIERDZENIA ---
-    is_confirmation_only = re.search(r"^\s*(tak|dokładnie|oczywiście|zgadza się|dobrze)\s*$", text_lower)
-    
-    was_last_bot_message_a_followup = False
-    if session["history"] and session["history"][-1][0] == "assistant":
-        last_bot_reply = session["history"][-1][1].lower()
-        if any(q in last_bot_reply for q in FOLLOWUP_QUESTIONS.values()):
-            was_last_bot_message_a_followup = True
-            
-    # Jeśli jest CZYSTE potwierdzenie i dotyczyło to pytania dopytującego:
-    if is_confirmation_only and was_last_bot_message_a_followup:
-        intent = session.get("last_intent")
-        session["asked_context"] = False
-        pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
-    # --- KONIEC LOGIKI NAPRAWY ---
-
+    # --- USUNIĘTA LOGIKA POTWIERDZENIA, PONIEWAŻ NIE MA JUŻ PYTAŃ DOPYTUJĄCYCH ---
 
     # === 1. OBSŁUGA CEN I TERMINÓW (PRIORYTET 1) ===
     elif any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
@@ -271,56 +236,26 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === 2. BAZA WIEDZY (ODPOWIEDZI PROSTE I PYTANIA DOPYTUJĄCE) ===
+    # === 2. BAZA WIEDZY -> PRZEKIEROWANIE DO GPT (PRIORYTET 3) ===
+    # Wszelkie wykryte intencje (KNOWLEDGE) są od teraz przekierowywane do Fallbacku.
     elif intent and intent in KNOWLEDGE:
+        pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
         
-        # === WARUNEK PRZEKIEROWANIA DO GPT (Wszystko, co nie jest techniką) ===
-        # Jeśli wykryto intencję, ale NIE MA jej w FOLLOWUP_QUESTIONS (np. 'trwalosc', 'pielęgnacja', 'przeciwwskazania')
-        if intent not in FOLLOWUP_QUESTIONS:
-             pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
-        
-        # === WARUNEK PYTANIA DOPYTUJĄCEGO (Tylko Techniki) ===
-        elif intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
-            session["asked_context"] = True
-            session["last_intent"] = intent
-            reply = FOLLOWUP_QUESTIONS[intent]
-            update_history(session, user_message, reply)
-            return jsonify({'reply': reply})
-        
-        # Jeśli klient odpowiedział na pytanie dopytujące, ale NIE słowem "tak" (czyli ma nowe info), 
-        # przechodzimy do GPT (FALLBACK 3).
-        elif session["asked_context"] == True:
-            pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
-        
-        # Jeśli nie złapał nic, co wymaga GPT, daje prostą odpowiedź (powinno być rzadkie)
-        else:
-            session["last_intent"] = intent
-            session["asked_context"] = False
-            reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
-            reply = add_phone_once(reply, session, count)
-            update_history(session, user_message, reply)
-            return jsonify({'reply': reply})
-
     # === 3. FALLBACK GPT (Logika Eksperta z pełną wiedzą) ===
-    # Wszelkie nierozpoznane intencje, złożone pytania i potwierdzenia trafiają tutaj!
+    # Wszelkie nierozpoznane intencje, złożone pytania i intencje z Bazy Wiedzy trafiają tutaj!
     
-    # === KLUCZOWE WZMOCNIENIE FALLBACKU! ===
-    # Jeśli do tego momentu nie rozpoznano nowej intencji (new_intent jest None)
-    # I nie jest to czyste potwierdzenie ('tak'), które zostało obsłużone wcześniej
-    # ORAZ bot w poprzednim kroku nie zadawał pytania dopytującego (które ma być obsłużone przez GPT)
-    # ZMUSZAMY SYSTEM DO TRAFIENIA DO GPT Z NOWYM PYTANIEM.
-    if new_intent is None and not is_confirmation_only:
+    # Zabezpieczenie przed błędem kontekstu (klient pyta o nierozpoznane słowo po intencji)
+    if new_intent is None:
         session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat.
-        session["asked_context"] = False
-    # **************************************
         
-    # --- WZMOCNIONY SYSTEM PROMPT (Bez zmian od ostatniej wersji, jest już dobry) ---
+    
+    # --- WZMOCNIONY SYSTEM PROMPT (Bez zmian) ---
     system_prompt = f"""
     {PMU_FULL_KNOWLEDGE}
 
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
-    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
+    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI. Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
     3. **Unikaj formy "ja"**. Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
     5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł, np. 'kto wykonuje zabieg?'), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
