@@ -13,6 +13,7 @@ DANE SALONU:
 - Adres: ul. Junikowska 9
 - Godziny otwarcia: Poniedziałek - Piątek: 09:00 - 19:00
 - Kontakt: 881 622 882
+- Zespół: W naszym salonie zabiegi wykonuje certyfikowany i zgrany **zespół linergistek** z wieloletnim doświadczeniem. Każda z nich specjalizuje się w różnych aspektach makijażu permanentnego, co gwarantuje najwyższą jakość i dobór idealnej techniki. Aby potwierdzić personalia eksperta, który będzie Cię przyjmował, prosimy o kontakt telefoniczny z recepcją.
 
 DEFINICJE I FAKTY:
 - Makijaż permanentny (PMU/mikropigmentacja): Wprowadzenie pigmentu płytko do naskórka lub granicy naskórkowo-skórnej.
@@ -89,7 +90,7 @@ KNOWLEDGE = {
 # === SŁOWA KLUCZOWE (BEZ ZMIAN) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
-        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
+        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąża\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
         r"\bkaw\w*", r"\bpi\w+\s+kaw\w*", r"\bespresso\w*", r"\blatte\w*", r"\bkofein\w*",
         r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
     ],
@@ -118,7 +119,7 @@ INTENT_PRIORITIES = [
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
-# === POMOCNICZE FUNKCJE (bez zmian) ===
+# === POMOCNICZE FUNKCJE (ZMIANA W add_phone_once) ===
 def detect_intent(text):
     scores = {}
     for intent, patterns in INTENT_KEYWORDS.items():
@@ -147,7 +148,8 @@ def emojis_for(intent):
     return " ".join(random.sample(mapping.get(intent, ["✨", "🌸"]), 2))
 
 def add_phone_once(reply, session, count):
-    if count % 3 == 0 and not session["last_phone"]:
+    # ZMIANA: Zwiększenie częstotliwości podawania numeru telefonu z co 3. na co 5. wiadomość
+    if count % 5 == 0 and not session["last_phone"]:
         reply += random.choice(PHONE_MESSAGES).replace('**', '') 
         session["last_phone"] = True
     else:
@@ -174,7 +176,7 @@ def start_message():
     SESSION_DATA[user_ip] = {
         "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
+    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -217,19 +219,21 @@ def chat():
         return jsonify({'reply': reply})
 
     elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja"]):
+        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
         reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
     
-    # === NOWA REGUŁA: KONSULTACJE ===
+    # === REGUŁA: KONSULTACJE ===
     elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
+        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
         reply = f"Oferujemy bezpłatne konsultacje. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
     
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): # <-- ROZSZERZONA LISTA
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): 
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -238,12 +242,11 @@ def chat():
     # === 2. WSZYSTKIE INNE PYTANIA -> FALLBACK GPT (PRIORYTET 3) ===
     
     # Zabezpieczenie: Jeśli nie rozpoznano nowej intencji (new_intent is None), 
-    # to GPT musi zająć się kontekstem.
     if new_intent is None:
         session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat, który musi obsłużyć.
         
     
-    # --- WZMOCNIONY SYSTEM PROMPT (Bez zmian) ---
+    # --- WZMOCNIONY SYSTEM PROMPT ---
     system_prompt = f"""
     {PMU_FULL_KNOWLEDGE}
 
@@ -252,7 +255,7 @@ def chat():
     2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
     3. **Unikaj formy "ja"**. Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
-    5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł, np. 'kto wykonuje zabieg?'), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
+    5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne, których nie obsługują reguły), zalecaj kontakt telefoniczny z recepcją salonu, aby to potwierdzić ({PHONE_NUMBER}).
     6. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
     7. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
     8. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
@@ -285,7 +288,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
