@@ -81,7 +81,6 @@ PHONE_MESSAGES = [
 ]
 
 # === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte) ===
-# Teraz wszystkie wykryte intencje trafiają od razu do GPT, dlatego KNOWLEDGE jest puste.
 KNOWLEDGE = {
     "pielęgnacja": [], "techniki_brwi": [], "techniki_usta": [], 
     "trwalosc": [], "fakty_mity": [], "przeciwwskazania": []
@@ -90,7 +89,7 @@ KNOWLEDGE = {
 # === SŁOWA KLUCZOWE (BEZ ZMIAN) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
-        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąg\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
+        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
         r"\bkaw\w*", r"\bpi\w+\s+kaw\w*", r"\bespresso\w*", r"\blatte\w*", r"\bkofein\w*",
         r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
     ],
@@ -116,7 +115,6 @@ INTENT_PRIORITIES = [
     "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
 
-# === USUNIĘCIE FLAGA asked_context, ponieważ nie ma pytań dopytujących ===
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
@@ -176,7 +174,7 @@ def start_message():
     SESSION_DATA[user_ip] = {
         "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
+    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -218,13 +216,20 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
+    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja"]):
         reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
     
+    # === NOWA REGUŁA: KONSULTACJE ===
+    elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
+        reply = f"Oferujemy bezpłatne konsultacje. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "mąz" "osoba towarzysząca"]):
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): # <-- ROZSZERZONA LISTA
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -233,7 +238,6 @@ def chat():
     # === 2. WSZYSTKIE INNE PYTANIA -> FALLBACK GPT (PRIORYTET 3) ===
     
     # Zabezpieczenie: Jeśli nie rozpoznano nowej intencji (new_intent is None), 
-    # ale jest to kontynuacja rozmowy (poprzednia intencja != None), 
     # to GPT musi zająć się kontekstem.
     if new_intent is None:
         session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat, który musi obsłużyć.
