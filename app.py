@@ -214,8 +214,15 @@ def chat():
     # === 1. OBSŁUGA CEN, CZASU I TERMINÓW (PRIORYTET 1) ===
     
     # === REGUŁA: CZAS TRWANIA ZABIEGU (Wysoki priorytet, bo może użyć słowa 'ile') ===
-    if any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]):
+    if any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]) and not any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+    
+    # === REGUŁA: CZAS TRWANIA KONSULTACJI ===
+    elif any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]) and any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
+        reply = "Bezpłatna konsultacja trwa **około 1 godziny**. Jest to czas przeznaczony na omówienie szczegółów, wybór metody, kolorów i odpowiedzi na Pani wszystkie pytania. 🌿"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -228,18 +235,28 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE MAJĄ PIERWSZEŃSTWO PRZED ZABIEGIEM ===
+    # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE ORAZ TERMINY ===
+    
+    # === REGUŁA: UMÓWIENIE KONSULTACJI (Słowa kluczowe: 'umówić', 'termin', 'konsultacja') ===
+    elif any(w in text_lower for w in ["umówić", "termin", "zapis", "wolne", "rezerwacja"]) and any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
+        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
+        reply = f"Chętnie umówimy Panią na **bezpłatną konsultację**! Prosimy o kontakt telefoniczny z recepcją: {PHONE_NUMBER}, aby znaleźć dogodny dla Pani termin spotkania. Zarezerwuje Pani około 1 godziny 🌿."
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    # === REGUŁA: UMÓWIENIE ZABIEGU (Słowa kluczowe: 'umówić', 'termin', 'zabieg' lub BRAK słowa 'konsultacja') ===
+    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "zabieg"]):
+        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
+        reply = f"Chętnie umówimy Panią na **zabieg**! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Pani kontakt telefoniczny? {PHONE_NUMBER} 🌸"
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    # === REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ (Słowa kluczowe: 'konsultacja' bez 'terminu') ===
     elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
-        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
-        reply = f"Oferujemy bezpłatne konsultacje, które trwają **około 1 godziny**. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
+        reply = f"Oferujemy bezpłatne konsultacje, które trwają około 1 godziny. Jest to idealny czas na omówienie wszelkich obaw i dobranie metody. Czy chciałaby Pani umówić termin? Możemy to zrobić telefonicznie: {PHONE_NUMBER} 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
-
-    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja"]):
-        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
-        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
+        
     
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
     elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): 
@@ -255,7 +272,7 @@ def chat():
         session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat, który musi obsłużyć.
         
     
-    # --- WZMOCNIONY SYSTEM PROMPT (ZMIENIONY) ---
+    # --- WZMOCNIONY SYSTEM PROMPT ---
     system_prompt = f"""
     {PMU_FULL_KNOWLEDGE}
 
@@ -299,7 +316,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
