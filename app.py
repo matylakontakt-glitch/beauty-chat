@@ -118,7 +118,7 @@ INTENT_PRIORITIES = [
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
-# === POMOCNICZE FUNKCJE (Poprawiono) ===
+# === POMOCNICZE FUNKCJE (bez zmian) ===
 def detect_intent(text):
     scores = {}
     for intent, patterns in INTENT_KEYWORDS.items():
@@ -134,8 +134,6 @@ def detect_intent(text):
                     return p
     return best_intent
 
-# Usunięto funkcję add_phone_once, ponieważ telefon jest dodawany manualnie tylko w wymaganych regułach.
-# Usunięto również zmienne sesyjne last_phone i message_count z funkcji update_history.
 def emojis_for(intent):
     mapping = {
         "przeciwwskazania": ["🌿", "💋"],
@@ -164,7 +162,6 @@ def serve_index():
 @app.route('/start', methods=['GET'])
 def start_message():
     user_ip = request.remote_addr or "default"
-    # Usunięto zmienne message_count i last_phone, ponieważ nie są już używane w logice.
     SESSION_DATA[user_ip] = {
         "last_intent": None, "history": deque()
     }
@@ -181,7 +178,6 @@ def chat():
     text_lower = user_message.lower()
     
     if user_ip not in SESSION_DATA:
-        # Usunięto zmienne message_count i last_phone, ponieważ nie są już używane w logice.
         SESSION_DATA[user_ip] = {
             "last_intent": None, "history": deque()
         }
@@ -192,7 +188,6 @@ def chat():
         return jsonify({'reply': reply})
 
     session = SESSION_DATA[user_ip]
-    # Usunięto inkrementację message_count
     reply = ""
 
     new_intent = detect_intent(text_lower)
@@ -207,43 +202,36 @@ def chat():
     # ** REGUŁA CENOWA (PRIORYTET 1) **
     if any(word in text_lower for word in ["ile\w*", "koszt\w*", "kosztuje\w*", "cena\w*", "za ile\w*", "cennik\w*"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
-        # USUNIĘTO: add_phone_once
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     elif any(w in text_lower for w in ["ile go\w*", "jak dlugo sie go\w*", "czas gojeni\w*", "gojenie trwa\w*", "goi się\w*"]):
-        # USUNIĘTO: add_phone_once
         reply = "Pełny proces gojenia dzieli się na etapy: **Faza Sączenia** (Dni 1-3) oraz **Łuszczenie się naskórka** (Dni 4-10, pojawiają się mikrostrupki, których nie wolno zdrapywać!). Pełna **stabilizacja koloru** następuje po około **28 dniach** (cykl odnowy naskórka). ✨"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     elif any(w in text_lower for w in ["gdzie\w*", "adres\w*", "lokalizacj\w*", "dojazd\w*"]):
-        # USUNIĘTO: add_phone_once
         reply = "Nasz salon znajduje się pod adresem: **ul. Junikowska 9** 🌸. Zapraszamy od poniedziałku do piątku w godzinach 09:00 - 19:00."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     elif any(w in text_lower for w in ["ile trwa\w*", "jak długo\w*", "czas\w*", "długo\w*"]) and not any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
-        # USUNIĘTO: add_phone_once
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
     elif any(w in text_lower for w in ["ile trwa\w*", "jak długo\w*", "czas\w*", "długo\w*"]) and any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
-        # USUNIĘTO: add_phone_once
         reply = "Bezpłatna konsultacja trwa **około 1 godziny**. Jest to czas przeznaczony na omówienie szczegółów, wybór metody, kolorów i odpowiedzi na Pani wszystkie pytania. 🌿"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     elif any(w in text_lower for w in ["oczy\w*", "powieki\w*", "eyeliner\w*", "zagęszczen\w*"]):
-        # TELEFON POZOSTAJE, bo jest kluczowy dla przekierowania
         reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach**, aby zapewnić najwyższą jakość i specjalizację w tych obszarach. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     elif any(w in text_lower for w in ["bol\w*", "ból\w*", "potrzebn\w*", "boli\w*", "czy boli\w*"]):
-        # USUNIĘTO: add_phone_once
         reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -261,28 +249,24 @@ def chat():
         r")\b",
         text_lower
     ):
-        # USUNIĘTO: add_phone_once
         reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     # === REGUŁA: UMÓWIENIE KONSULTACJI ===
     elif any(w in text_lower for w in ["umówić\w*", "termin\w*", "zapis\w*", "woln\w*", "rezerwacj\w*"]) and any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
-        # TELEFON POZOSTAJE
         reply = f"Chętnie umówimy Panią na **bezpłatną konsultację**! Prosimy o kontakt telefoniczny z recepcją: {PHONE_NUMBER}, aby znaleźć dogodny dla Pani termin spotkania. Zarezerwuje Pani około 1 godziny 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     # === REGUŁA: UMÓWIENIE ZABIEGU ===
     elif any(w in text_lower for w in ["termin\w*", "umówić\w*", "zapis\w*", "woln\w*", "rezerwacj\w*", "zabieg\w*"]):
-        # TELEFON POZOSTAJE
         reply = f"Chętnie umówimy Panią na **zabieg**! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Pani kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
     # === REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ ===
     elif any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
-        # TELEFON POZOSTAJE
         reply = f"Oferujemy bezpłatne konsultacje, które trwają około 1 godziny. Jest to idealny czas na omówienie wszelkich obaw i dobranie metody. Czy chciałaby Pani umówić termin? Możemy to zrobić telefonicznie: {PHONE_NUMBER} 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -297,10 +281,10 @@ def chat():
 
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
-    2. Ton: **KOBIECY, BARDZO EMPATYCZNY, LEKKI i LUDZKI.** Twój styl powinien być **ciepły, wspierający i osobisty**, unikając technicznego żargonu tam, gdzie to możliwe, chyba że odpowiadasz na konkretne pytanie techniczne.
+    2. Ton: **BARDZO CIEPŁY, PRZYJACIELSKI, LEKKI i LUDZKI.** Twój styl powinien być **ciepły, wspierający i osobisty, jak rozmowa z przyjazną specjalistką**, unikaj sztywnej, chłodnej formalności.
     3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"** ("powinna Pani", "rozumiemy Pani obawy"). **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**.
-    4. **Emocje i Zaufanie:** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Pani obawy", "To bardzo ważne pytanie, chętnie pomożemy", "W naszym salonie dbamy o...".
-    5. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Używaj emotek z wyczuciem (max 2).
+    4. **Emocje i Zaufanie:** Aktywnie używaj wyrażeń budujących zaufanie i bliskość: "Rozumiemy Pani obawy", "To bardzo ważne pytanie, chętnie pomożemy", "W naszym salonie dbamy o...".
+    5. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Używaj emotek z wyczuciem (max 2-3 w całej odpowiedzi).
     6. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
     7. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne), zalecaj kontakt telefoniczny z recepcją salonu ({PHONE_NUMBER}).
     8. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście.
@@ -321,7 +305,6 @@ def chat():
             messages=messages
         )
         reply = completion.choices[0].message.content.strip()
-        # USUNIĘTO: add_phone_once
     except Exception as e:
         reply = f"Przepraszamy, wystąpił chwilowy błąd komunikacji z naszym systemem. Prosimy o kontakt telefoniczny pod numerem {PHONE_NUMBER} lub spróbuj za chwilę 💔."
 
