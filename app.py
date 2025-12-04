@@ -2,7 +2,59 @@ from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
 import os, random, re
-from collections import deque # Dodajemy dla lepszej obsługi historii
+from collections import deque
+
+# === DANE SALONU I WIEDZA (PRZENIESIONE Z knowledgeBase.ts) ===
+
+# Cała wiedza, która będzie wstrzyknięta do System Promptu GPT
+PMU_FULL_KNOWLEDGE = """
+Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Twoja wiedza jest techniczna, medyczna i praktyczna, ale przekazujesz ją w sposób zrozumiały i empatyczny dla klientki.
+
+DANE SALONU:
+- Adres: ul. Promienista 10
+- Godziny otwarcia: Poniedziałek - Piątek: 09:00 - 18:00
+- Kontakt: 881 622 882
+
+DEFINICJE I FAKTY:
+- Makijaż permanentny (PMU/mikropigmentacja): Wprowadzenie pigmentu płytko do naskórka lub granicy naskórkowo-skórnej.
+- Różnica vs Tatuaż: Tatuaż jest w skórze właściwej. PMU jest półtrwały (1-3 lata, czasem do 5).
+- Bezpieczeństwo chemiczne: Pigmenty muszą spełniać normy UE REACH 2020/2081 (np. limit ołowiu 0,00007%). Używamy tylko atestowanych, bezpiecznych barwników.
+
+TECHNIKI - BRWI:
+1. Pudrowa (Powder Brows): Maszynowe cieniowanie, efekt "przyprószenia". Bardziej trwała (2-3 lata), idealna dla każdego typu skóry (także tłustej).
+2. Ombre Brows: Gradient – jaśniejsza nasada, ciemniejszy koniec i dół.
+
+TECHNIKI - USTA:
+- Lip Blush: Akwarelowe, delikatne uwydatnienie czerwieni.
+- Full Lip Color: Efekt szminki.
+- Wymagana osłona przeciwwirusowa (Heviran) 3 dni przed i 3 dni po zabiegu (profilaktyka opryszczki).
+
+TECHNIKI - OCZY:
+- Zagęszczenie linii rzęs: Pigment między rzęsami (efekt gęstszych rzęs).
+- Eyeliner dekoracyjny: Widoczna kreska (jaskółka).
+
+PRZECIWWSKAZANIA (BEZPIECZEŃSTWO):
+- Bezwzględne: Ciąża, laktacja, nowotwory (bez zgody lekarza), aktywne infekcje, łuszczyca w miejscu zabiegu.
+- Czasowe (Karencja):
+  * Odżywki do rzęs: Odstawić 3-6 mies. przed zabiegiem oczu (powodują przekrwienie).
+  * Retinoidy/Izotek: Odstawić 6 mies. przed (ryzyko blizn).
+  * Kwas hialuronowy w ustach: Odstęp 4 tyg.
+  * Leki rozrzedzające krew (aspiryna): Odstawić 24h przed.
+
+PROCES GOJENIA I PIELĘGNACJA (KLUCZOWE):
+- Dni 1-3 (Faza sączenia): Przemywać wacikiem z wodą (przegotowaną/destylowaną), by zmyć osocze. NIE nakładać grubej warstwy maści (gojenie "na sucho" lub minimalne).
+- Dni 4-10 (Łuszczenie): Pojawiają się mikrostrupki. NIE WOLNO ICH DRAPAĆ (grozi blizną i ubytkiem koloru). Można lekko nawilżać (np. Alantan) gdy skóra ciągnie.
+- Zakazy: Słońce (UV niszczy pigment), sauna, basen przez 2 tyg.
+- Kolor: Po wygojeniu jaśnieje o 30-50%. Bezpośrednio po zabiegu jest ciemny.
+- Stabilizacja: Pełny kolor widoczny po ok. 28 dniach (cykl naskórka).
+
+RYZYKA I PROBLEMY:
+- Kolor niebieski/szary: Zbyt głęboka pigmentacja (efekt Tyndalla/tatuaż) lub użycie czystej czerni.
+- Kolor łososiowy: Utlenienie się tlenków żelaza w brązach.
+- Ból: Minimalny (stosujemy znieczulenie lidokainą).
+
+PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymetrii.
+"""
 
 # === INICJALIZACJA ===
 load_dotenv()
@@ -11,46 +63,47 @@ api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 client = OpenAI(api_key=api_key)
 
-# === CENNIK ===
+# === CENNIK (Zaktualizowany do danych z knowledgeBase) ===
 PRICE_LIST = {
-    "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie jest w cenie ✨",
-    "usta": "Makijaż permanentny ust kosztuje 1000 zł — dopigmentowanie jest w cenie 💋",
-    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar 350 zł 🌿"
+    "brwi": "Makijaż permanentny brwi kosztuje **1200 zł** — dopigmentowanie jest w cenie ✨",
+    "usta": "Makijaż permanentny ust kosztuje **1200 zł** — dopigmentowanie jest w cenie 💋",
+    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar **350 zł** 🌿"
 }
+# === KONFIGURACJA TELEFONU ===
+PHONE_NUMBER = "881 622 882"
+PHONE_MESSAGES = [
+    f"\n\nJeśli wolisz porozmawiać o szczegółach, zadzwoń do nas: **{PHONE_NUMBER}** 📞",
+    f"\n\nChętnie odpowiemy na bardziej złożone pytania telefonicznie! **{PHONE_NUMBER}** 🌿",
+    f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: **{PHONE_NUMBER}** 🌸"
+]
 
-# === BAZA WIEDZY ===
+# === BAZA WIEDZY (Do reguł, nie do GPT) ===
+# Zachowujemy, by szybko odpowiadać na proste pytania bez angażowania GPT
 KNOWLEDGE = {
+    # Używamy tylko najprostszych odpowiedzi, by nie konkurować z GPT
     "przeciwwskazania": [
-        "Zabieg nie jest wykonywany w ciąży ani podczas karmienia piersią 🌿💋",
-        "Aktywne infekcje, nowotwory, kuracja sterydami lub retinoidami — wtedy zabiegu nie wykonujemy 🌿💋",
-        "Przed zabiegiem nie pij kawy ani alkoholu — kofeina i alkohol rozrzedzają krew, co może utrudnić przyjęcie pigmentu 🌿💋"
+        "Bezwzględnymi przeciwwskazaniami są ciąża, laktacja oraz aktywne infekcje 🌿.",
+        "Pamiętaj o odstawieniu leków rozrzedzających krew 24h wcześniej oraz konsultacji w przypadku chorób przewlekłych 💋."
     ],
     "pielęgnacja": [
-        "Po zabiegu nie drap i nie zrywaj strupków; skóra goi się ok. 7 dni, a kolor stabilizuje po ~30 dniach 🌿✨",
-        "Przez tydzień unikaj słońca, sauny, basenu i intensywnego wysiłku 🌿✨",
-        "Brwi przemywaj przegotowaną wodą 3–5× dziennie przez pierwsze 3 dni, potem delikatnie nawilżaj cienką warstwą preparatu 🌿✨"
+        "Kluczem jest nie drapać i nie zrywać strupków, oraz unikać słońca i sauny przez 2 tygodnie ✨.",
+        "W pierwszych dniach zalecamy delikatne przemywanie przegotowaną wodą, a potem minimalne nawilżanie 🌿."
     ],
     "techniki_brwi": [
-        "W naszym salonie wykonujemy dwie metody brwi: • Powder Brows — miękki efekt cienia • Ombre — jaśniejsze u nasady, ciemniejsze na końcach ✨🌸",
-        "Powder Brows: delikatny, pudrowy cień. Ombre: subtelny gradient (jaśniej przy nasadzie, ciemniej na końcu łuku) ✨🌸"
+        "Wybór zależy od typu skóry: *Powder Brows* (cieniowanie) jest idealna dla każdego, a *Microblading* jest odradzany przy skórze tłustej 🌸."
     ],
     "techniki_usta": [
-        "Najczęstsze techniki ust: • Lip Blush — naturalny rumieniec • Kontur ust — subtelne zdefiniowanie linii • Full Lip Color — pełne, równomierne wypełnienie 💋💄",
-        "Lip Blush daje lekki, świeży kolor; Full Lip Color — efekt klasycznej szminki; Kontur wyrównuje kształt ust 💋💄"
+        "Oferujemy *Lip Blush* (akwarelowy, naturalny efekt) lub *Full Lip Color* (efekt szminki) 💋."
     ],
     "trwalosc": [
-        "Efekt utrzymuje się zwykle 1–3 lata; zależy od pielęgnacji, fototypu i stylu życia ✨💄",
-        "Szybsze blaknięcie bywa przy cerze tłustej, częstej ekspozycji na słońce lub braku zaleceń pozabiegowych ✨💄"
+        "Efekt utrzymuje się zwykle 1–3 lata, zależy to od pielęgnacji i fototypu skóry ✨.",
     ],
     "fakty_mity": [
-        "Dzięki znieczuleniu większość klientek czuje jedynie lekkie szczypanie ✨🌸",
-        "PMU nie powoduje wypadania włosków — pigment jest wprowadzany płytko ✨🌸",
-        "Makijaż permanentny jest półtrwały — naturalnie blednie i wymaga odświeżenia ✨🌸"
+        "Ból jest minimalny, ponieważ stosujemy znieczulenie lidokainą. PMU jest półtrwały 🌸.",
     ]
 }
 
-# === SŁOWA KLUCZOWE ===
-# Używamy surowych stringów (r'') dla lepszej czytelności i bezpieczeństwa z RegExp
+# === SŁOWA KLUCZOWE (Bez zmian od ostatniej wersji, są OK) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
@@ -75,63 +128,30 @@ INTENT_KEYWORDS = {
         r"\bmit\w*", r"\bfakt\w*", r"\bbol\w*", r"\ból\w*", r"\bprawda\w*", r"\bfałsz\w*", r"\blaser\w*", r"\bremover\w*", r"\bmaszyna\w*"
     ]
 }
-
-# Kolejność rozstrzygania przy konfliktach
 INTENT_PRIORITIES = [
     "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
-
-# Pytania dopytujące (Zostawiamy, ale poprawimy ich użycie)
 FOLLOWUP_QUESTIONS = {
     "techniki_brwi": "Czy pytasz o metody brwi (Powder vs Ombre)?",
     "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?",
     "trwalosc": "Pytasz przed zabiegiem czy już po — chcesz wiedzieć, jak długo trzyma efekt?",
     "pielęgnacja": "Chodzi o przygotowanie przed zabiegiem czy pielęgnację po?"
 }
-
-# === SESJE ===
-# Używamy deque do historii dla automatycznego usuwania starych wiadomości
-# Limit historii: 10 wiadomości (5 par W-O)
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
-# === STRONA GŁÓWNA ===
-@app.route('/')
-def serve_index():
-    return send_from_directory('.', 'index.html')
+# === POMOCNICZE FUNKCJE ===
 
-# === POWITANIE ===
-@app.route('/start', methods=['GET'])
-def start_message():
-    welcome_text = (
-        "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨\n"
-        "\nO co chciałabyś zapytać na początek?"
-    )
-    # Resetuj sesję przy każdym /start
-    user_ip = request.remote_addr or "default"
-    SESSION_DATA[user_ip] = {
-        "message_count": 0, "last_intent": None, "asked_context": False, 
-        "last_phone": False, "history": deque()
-    }
-    return jsonify({'reply': welcome_text})
-
-# === POMOCNICZE ===
 def detect_intent(text):
     scores = {}
-    
-    # Używamy re.search dla elastycznego dopasowania RegExp
     for intent, patterns in INTENT_KEYWORDS.items():
         score = sum(1 for p in patterns if re.search(p, text, re.IGNORECASE))
         if score > 0:
             scores[intent] = score
-    
     if not scores:
         return None
-    
-    # Wybieranie najlepszej intencji na podstawie score (a w przypadku remisu, priorytetu)
     best_intent = max(scores, key=scores.get)
     tied = [i for i, s in scores.items() if s == scores[best_intent]]
-    
     if len(tied) > 1:
         for p in INTENT_PRIORITIES:
             if p in tied:
@@ -150,18 +170,15 @@ def emojis_for(intent):
     return " ".join(random.sample(mapping.get(intent, ["✨", "🌸"]), 2))
 
 def add_phone_once(reply, session, count):
+    # Logika zachęcania do kontaktu co kilka wiadomości (co 3)
     if count % 3 == 0 and not session["last_phone"]:
-        reply += random.choice([
-            "\n\nJeśli chcesz, mogę pomóc dobrać termin 💋 881 622 882",
-            "\n\nMasz ochotę na konsultację? Zadzwoń: 881 622 882 🌿"
-        ])
+        reply += random.choice(PHONE_MESSAGES)
         session["last_phone"] = True
     else:
         session["last_phone"] = False
     return reply
 
 def update_history(session, user_msg, bot_reply):
-    # Ograniczenie historii do HISTORY_LIMIT
     session["history"].append(("user", user_msg))
     if len(session["history"]) > HISTORY_LIMIT:
         session["history"].popleft()
@@ -169,7 +186,30 @@ def update_history(session, user_msg, bot_reply):
     session["history"].append(("assistant", bot_reply))
     if len(session["history"]) > HISTORY_LIMIT:
         session["history"].popleft()
+
+# === STRONA GŁÓWNA ===
+@app.route('/')
+def serve_index():
+    return send_from_directory('.', 'index.html')
+
+# === POWITANIE (Używamy teraz promptu Gemini) ===
+@app.route('/start', methods=['GET'])
+def start_message():
+    user_ip = request.remote_addr or "default"
+    # Resetuj sesję przy każdym /start
+    SESSION_DATA[user_ip] = {
+        "message_count": 0, "last_intent": None, "asked_context": False, 
+        "last_phone": False, "history": deque()
+    }
     
+    # Powitanie z Gemini AI Studio
+    welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego brwi i ust. Chętnie doradzę Ci w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸"
+    
+    # Dodaj powitanie do historii, by model o nim "pamiętał"
+    update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
+    
+    return jsonify({'reply': welcome_text})
+
 # === GŁÓWNY ENDPOINT ===
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -178,7 +218,6 @@ def chat():
     user_ip = request.remote_addr or "default"
     text_lower = user_message.lower()
     
-    # Inicjalizacja sesji jeśli nie istnieje
     if user_ip not in SESSION_DATA:
          SESSION_DATA[user_ip] = {
             "message_count": 0, "last_intent": None, "asked_context": False, 
@@ -193,85 +232,89 @@ def chat():
     session = SESSION_DATA[user_ip]
     session["message_count"] += 1
     count = session["message_count"]
-    
-    # Domyślna odpowiedź na koniec, jeśli żaden warunek się nie spełni
     reply = ""
 
-    # Reset flagi kontekstu, jeśli użytkownik zmienił temat
+    # Reset flagi kontekstu
     new_intent = detect_intent(text_lower)
     if new_intent and new_intent != session["last_intent"]:
         session["asked_context"] = False
-    
-    # Używamy intent, który jest aktualny lub był ostatnio aktywny (kontekst)
     intent = new_intent or session.get("last_intent")
 
-    # === 1. CENNIK (Najwyższy priorytet) ===
+    # === 1. OBSŁUGA CEN I TERMINÓW (Wysoki priorytet) ===
+    # Zachowujemy reguły, ale odpowiedzi są logicznie wplecione w GPT, jeśli nie pasują do prostego cennika
+
     if any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
-        reply = add_phone_once(all_prices, session, count)
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
-
-    # === 2. TERMINY (Wysoki priorytet) ===
-    if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
-        reply = "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸"
+        reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === 3. BAZA WIEDZY (Jeśli znaleziono intencję) ===
+    if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
+        # Odpowiedź zgodna z instrukcją Gemini
+        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy mogę zaproponować Ci kontakt telefoniczny? **{PHONE_NUMBER}** 🌸"
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    # === 2. BAZA WIEDZY (Jeśli znaleziono intencję) ===
     if intent and intent in KNOWLEDGE:
         
-        # Logika pytań dopytujących - Zadawaj TYLKO, jeśli kontekst nie został jeszcze określony
+        # Jeśli jest dopytywanie, zadaj pytanie
         if intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
-            session["asked_context"] = True # Oznacz, że zapytaliśmy
-            # Nie ustawiaj last_intent, aby przy kolejnej wiadomości system spróbował wrócić do bazy wiedzy
+            session["asked_context"] = True
             reply = FOLLOWUP_QUESTIONS[intent]
             update_history(session, user_message, reply)
             return jsonify({'reply': reply})
         
-        # Jeśli kontekst jest już określony LUB intencja nie wymaga dopytywania
-        session["last_intent"] = intent # Ustaw kontekst (do następnego razu)
-        session["asked_context"] = False # Resetuj
+        # Jeśli kontekst jest już określony LUB intencja nie wymaga dopytywania, daj prostą odpowiedź
+        # Używamy tej prostej odpowiedzi TYLKO dla bardzo szybkich i powtarzalnych pytań.
+        # W innych przypadkach - Fallback GPT, aby użyć pełnej bazy wiedzy.
+        session["last_intent"] = intent
+        session["asked_context"] = False
         reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === 4. FALLBACK GPT (Gdy nie pasuje żadna kategoria) ===
+    # === 3. FALLBACK GPT (Logika Eksperta z pełną wiedzą) ===
     
-    # Jeśli nowa intencja nie została znaleziona, a ostatnia była ustawiona na coś,
-    # co nie było w KNOWLEDGE (np. w poprzedniej pętli fallback), spróbuj ją wyczyścić
     if not new_intent:
         session["last_intent"] = None
         session["asked_context"] = False
 
-    system_prompt = (
-        "Jesteś Beauty Chat — inteligentną, empatyczną asystentką salonu makijażu permanentnego (PMU). "
-        "Twoja rola to odpowiadanie na pytania dotyczące PMU brwi i ust. "
-        "Odpowiadasz krótko, konkretnie i kobieco. Używasz maksymalnie 2 emotek z wyczuciem. "
-        "Nie wymyślasz informacji. Jeśli pytanie jest poza obszarem PMU brwi/ust, grzecznie sugeruj kontakt z obsługą klienta."
-    )
+    # PRZENIESIONY I ZOPTYMALIZOWANY SYSTEM PROMPT Z Gemini
+    system_prompt = f"""
+    {PMU_FULL_KNOWLEDGE}
 
-    # Konstruowanie historii wiadomości dla GPT
+    INSTRUKCJE SPECJALNE DLA MODELU:
+    1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadaj w języku polskim.
+    2. Ton: **Profesjonalny, empatyczny, budujący zaufanie.** Bądź miła i używaj emotek z umiarem.
+    3. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU powyżej.
+    4. **Formatowanie:** Używaj formatowania Markdown (pogrubienia **kluczowych terminów**, listy punktowane).
+    5. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację. Nie używaj zbędnych powitań po pierwszej wiadomości (za wyjątkiem /start).
+    6. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
+    """
+
     messages = [{"role": "system", "content": system_prompt}]
     
     # Dodanie wcześniejszych wiadomości z historii sesji
     for role, content in session["history"]:
-        # Używamy role: "user" lub "assistant"
         messages.append({"role": role, "content": content})
         
-    # Dodanie aktualnej wiadomości użytkownika
     messages.append({"role": "user", "content": user_message})
 
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.7, # Zwiększono, aby odpowiedzi były bardziej naturalne
+            temperature=0.7, # Zapewnia naturalną i logiczną odpowiedź
             max_tokens=600,
-            messages=messages # Przekazujemy całą historię
+            messages=messages
         )
         reply = completion.choices[0].message.content.strip()
+        
+        # Dodatkowe sprawdzenie, czy nie dodać numeru telefonu (jeśli GPT nie zrobił tego logicznie)
+        reply = add_phone_once(reply, session, count)
+        
     except Exception as e:
         reply = f"Ups! Coś poszło nie tak 💔 Spróbuj ponownie. ({e})"
 
@@ -281,7 +324,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
