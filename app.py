@@ -80,7 +80,8 @@ PHONE_MESSAGES = [
     f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: {PHONE_NUMBER} 🌸"
 ]
 
-# === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte - nie używamy już prostych odpowiedzi) ===
+# === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte) ===
+# Teraz wszystkie wykryte intencje trafiają od razu do GPT, dlatego KNOWLEDGE jest puste.
 KNOWLEDGE = {
     "pielęgnacja": [], "techniki_brwi": [], "techniki_usta": [], 
     "trwalosc": [], "fakty_mity": [], "przeciwwskazania": []
@@ -89,7 +90,7 @@ KNOWLEDGE = {
 # === SŁOWA KLUCZOWE (BEZ ZMIAN) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
-        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
+        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąg\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
         r"\bkaw\w*", r"\bpi\w+\s+kaw\w*", r"\bespresso\w*", r"\blatte\w*", r"\bkofein\w*",
         r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
     ],
@@ -115,9 +116,7 @@ INTENT_PRIORITIES = [
     "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
 
-# === USUNIĘCIE PYTAŃ DOPYTUJĄCYCH! ===
-# Zamiast tego, wszystkie intencje trafiają prosto do GPT po ekspercką, kontekstową odpowiedź.
-# FOLLOWUP_QUESTIONS = {} 
+# === USUNIĘCIE FLAGA asked_context, ponieważ nie ma pytań dopytujących ===
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
@@ -175,8 +174,7 @@ def serve_index():
 def start_message():
     user_ip = request.remote_addr or "default"
     SESSION_DATA[user_ip] = {
-        "message_count": 0, "last_intent": None, "asked_context": False, 
-        "last_phone": False, "history": deque()
+        "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
     }
     welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
@@ -192,8 +190,7 @@ def chat():
     
     if user_ip not in SESSION_DATA:
          SESSION_DATA[user_ip] = {
-            "message_count": 0, "last_intent": None, "asked_context": False, 
-            "last_phone": False, "history": deque()
+            "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
         }
 
     if not user_message:
@@ -209,15 +206,12 @@ def chat():
     new_intent = detect_intent(text_lower)
     
     # === LOGIKA ZARZĄDZANIA INTENCJĄ ===
-    # Teraz intencja tylko przechodzi dalej, bez aktywowania flagi 'asked_context'
     if new_intent and new_intent != session["last_intent"]:
         session["last_intent"] = new_intent
     intent = new_intent or session.get("last_intent") 
     
-    # --- USUNIĘTA LOGIKA POTWIERDZENIA, PONIEWAŻ NIE MA JUŻ PYTAŃ DOPYTUJĄCYCH ---
-
     # === 1. OBSŁUGA CEN I TERMINÓW (PRIORYTET 1) ===
-    elif any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
+    if any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         reply = add_phone_once(reply, session, count)
@@ -236,17 +230,13 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === 2. BAZA WIEDZY -> PRZEKIEROWANIE DO GPT (PRIORYTET 3) ===
-    # Wszelkie wykryte intencje (KNOWLEDGE) są od teraz przekierowywane do Fallbacku.
-    elif intent and intent in KNOWLEDGE:
-        pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
-        
-    # === 3. FALLBACK GPT (Logika Eksperta z pełną wiedzą) ===
-    # Wszelkie nierozpoznane intencje, złożone pytania i intencje z Bazy Wiedzy trafiają tutaj!
+    # === 2. WSZYSTKIE INNE PYTANIA -> FALLBACK GPT (PRIORYTET 3) ===
     
-    # Zabezpieczenie przed błędem kontekstu (klient pyta o nierozpoznane słowo po intencji)
+    # Zabezpieczenie: Jeśli nie rozpoznano nowej intencji (new_intent is None), 
+    # ale jest to kontynuacja rozmowy (poprzednia intencja != None), 
+    # to GPT musi zająć się kontekstem.
     if new_intent is None:
-        session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat.
+        session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat, który musi obsłużyć.
         
     
     # --- WZMOCNIONY SYSTEM PROMPT (Bez zmian) ---
@@ -255,7 +245,7 @@ def chat():
 
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
-    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI. Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
+    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
     3. **Unikaj formy "ja"**. Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
     5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł, np. 'kto wykonuje zabieg?'), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
@@ -291,7 +281,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
