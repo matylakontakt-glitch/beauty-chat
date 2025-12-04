@@ -57,6 +57,12 @@ RYZYKA I PROBLEMY:
 - Ból: Minimalny (stosujemy znieczulenie lidokainą).
 
 PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymetrii.
+
+---
+**CENNIK (do użycia w Fallbacku GPT):**
+- Makijaż permanentny brwi: 1200 zł (dopigmentowanie w cenie ✨)
+- Makijaż permanentny ust: 1200 zł (dopigmentowanie w cenie 💋)
+- Laserowe usuwanie PMU brwi: 350 zł za jeden obszar 🌿
 """
 
 # === INICJALIZACJA ===
@@ -298,7 +304,7 @@ def chat():
     7. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne), zalecaj kontakt telefoniczny z recepcją salonu ({PHONE_NUMBER}).
     8. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście.
     9. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
-    10. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin, zachęcaj do kontaktu telefonicznego: {PHONE_NUMBER}.
+    10. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę, podaj ją, używając danych z sekcji CENNIK w WIEDZY PMU. TYLKO w sprawie rezerwacji terminu lub jeśli pytania dot. innych szczegółów logistycznych, zachęcaj do kontaktu telefonicznego: {PHONE_NUMBER}.
     """
 
     messages = [{"role": "system", "content": system_prompt}]
