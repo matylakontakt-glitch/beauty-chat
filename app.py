@@ -109,7 +109,7 @@ INTENT_KEYWORDS = {
     ],
     "fakty_mity": [
         r"\bmit\w*", r"\bfakt\w*", r"\bbol\w*", r"\ból\w*", r"\bprawda\w*", r"\bfałsz\w*", r"\blaser\w*", r"\bremover\w*", r"\bmaszyna\w*",
-        r"\beyeliner\w*", r"\boczy\w*", r"\b powieki\w*", # Dodano słowa kluczowe dotyczące PMU oczu
+        r"\beyeliner\w*", r"\boczy\w*", r"\b powieki\w*", 
     ]
 }
 INTENT_PRIORITIES = [
@@ -240,7 +240,15 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE ORAZ TERMINY ===
+    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - WZMOCNIONA ORAZ PRZESUNIĘTA NA WYŻSZY PRIORYTET ===
+    # Zabezpieczenie przed regułami rezerwacji, które mogą mieć wspólne słowa (np. "zabieg")
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank", "razem"]) \
+        and any(w in text_lower for w in ["mogę", "przyjść", "na zabieg", "z"]): 
+        reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE ORAZ TERMINY (TERAZ NIŻSZY PRIORYTET) ===
     
     # === REGUŁA: UMÓWIENIE KONSULTACJI (Słowa kluczowe: 'umówić', 'termin', 'konsultacja') ===
     elif any(w in text_lower for w in ["umówić", "termin", "zapis", "wolne", "rezerwacja"]) and any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
@@ -263,12 +271,6 @@ def chat():
         return jsonify({'reply': reply})
         
     
-    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - WZMOCNIONA ORAZ BEZ PROPOZYCJI REZERWACJI ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank"]): 
-        reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
-        
     # === 2. WSZYSTKIE INNE PYTANIA -> FALLBACK GPT (PRIORYTET 3) ===
     
     # Zabezpieczenie: Jeśli nie rozpoznano nowej intencji (new_intent is None), 
@@ -320,7 +322,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
