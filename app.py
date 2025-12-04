@@ -131,11 +131,11 @@ INTENT_KEYWORDS = {
 INTENT_PRIORITIES = [
     "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
+
 FOLLOWUP_QUESTIONS = {
+    # Pytania dopytujące tylko dla technik
     "techniki_brwi": "Czy pytasz o metody brwi (Powder vs Ombre)?",
-    "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?",
-    "trwalosc": "Pytasz przed zabiegiem czy już po — chcesz wiedzieć, jak długo trzyma efekt?",
-    "pielęgnacja": "Chodzi o przygotowanie przed zabiegiem czy pielęgnację po?"
+    "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?"
 }
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
@@ -217,7 +217,7 @@ def chat():
 
     if not user_message:
         reply = 'Napisz coś, żebym mogła pomóc 💬'
-        update_history(SESSION_DATA[user_ip], user_message, reply)
+        update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
     session = SESSION_DATA[user_ip]
@@ -226,31 +226,32 @@ def chat():
     reply = ""
 
     new_intent = detect_intent(text_lower)
+    
+    # === LOGIKA ZARZĄDZANIA INTENCJĄ ===
     if new_intent and new_intent != session["last_intent"]:
         session["asked_context"] = False
-    intent = new_intent or session.get("last_intent")
+        session["last_intent"] = new_intent
+    # Ta linia musi być tutaj, aby obsłużyć przypadek, gdy klient odpowiada na pytanie dopytujące!
+    intent = new_intent or session.get("last_intent") 
     
-    # --- DODATKOWA LOGIKA DLA NAPRAWY BŁĘDU ---
-    # Jeśli użytkownik tylko potwierdza (np. "tak", "zgadza się") i jest w trakcie kontekstu,
-    # wymuszamy zachowanie intencji poprzedniego kroku, aby GPT miał kontekst.
+    # --- LOGIKA DLA NAPRAWY BŁĘDU POTWIERDZENIA ---
     is_confirmation_only = re.search(r"^\s*(tak|dokładnie|oczywiście|zgadza się|dobrze)\s*$", text_lower)
     
-    # Sprawdzamy historię, by ustalić, czy ostatnia wiadomość bota była pytaniem dopytującym
     was_last_bot_message_a_followup = False
     if session["history"] and session["history"][-1][0] == "assistant":
         last_bot_reply = session["history"][-1][1].lower()
-        if any(q in last_bot_reply for q in ["czy pytasz o metody brwi", "chodzi o techniki ust", "pytasz przed zabiegiem czy już po", "chodzi o przygotowanie przed"]):
+        if any(q in last_bot_reply for q in FOLLOWUP_QUESTIONS.values()):
             was_last_bot_message_a_followup = True
             
-    # Jeśli jest potwierdzenie i to potwierdzenie dotyczyło pytania dopytującego:
+    # Jeśli jest CZYSTE potwierdzenie i dotyczyło to pytania dopytującego:
     if is_confirmation_only and was_last_bot_message_a_followup:
-        # Przekierowujemy do Fallbacku GPT (sekcja 3), by uzyskać pełną odpowiedź.
-        # W tym przypadku nie ruszamy 'intent' ani 'new_intent', bo GPT użyje kontekstu.
-        pass # Kontynuuj do sekcji 3
-    # --- KONIEC DODATKOWEJ LOGIKI ---
+        intent = session.get("last_intent")
+        session["asked_context"] = False
+        pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
+    # --- KONIEC LOGIKI NAPRAWY ---
 
 
-    # === 1. OBSŁUGA CEN I TERMINÓW ===
+    # === 1. OBSŁUGA CEN I TERMINÓW (PRIORYTET 1) ===
     elif any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
@@ -259,36 +260,40 @@ def chat():
         return jsonify({'reply': reply})
 
     elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
-        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
+        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
     
-    # === 1.5 REGUŁA LOGISTYCZNA (Dzieci, Zwierzęta, Goście) ===
+    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
     elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca"]):
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === 2. BAZA WIEDZY (Jeśli znaleziono intencję) ===
+    # === 2. BAZA WIEDZY (ODPOWIEDZI PROSTE I PYTANIA DOPYTUJĄCE) ===
     elif intent and intent in KNOWLEDGE:
         
-        # Jeśli intencja to PRZECIWWSKAZANIA, ZAWSZE PRZEJDŹ DO GPT (FALLBACK 3)
-        if intent == "przeciwwskazania":
+        # === WARUNEK PRZEKIEROWANIA DO GPT (Wszystko, co nie jest techniką) ===
+        # Jeśli wykryto intencję, ale NIE MA jej w FOLLOWUP_QUESTIONS (np. 'trwalosc', 'pielęgnacja', 'przeciwwskazania')
+        if intent not in FOLLOWUP_QUESTIONS:
              pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
         
-        # W przypadku innych, prostych intencji (np. pielęgnacja, trwałość) użyj prostej reguły
+        # === WARUNEK PYTANIA DOPYTUJĄCEGO (Tylko Techniki) ===
+        elif intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
+            session["asked_context"] = True
+            session["last_intent"] = intent
+            reply = FOLLOWUP_QUESTIONS[intent]
+            update_history(session, user_message, reply)
+            return jsonify({'reply': reply})
+        
+        # Jeśli klient odpowiedział na pytanie dopytujące, ale NIE słowem "tak" (czyli ma nowe info), 
+        # przechodzimy do GPT (FALLBACK 3).
+        elif session["asked_context"] == True:
+            pass # Kontynuuj do sekcji 3 (FALLBACK GPT)
+        
+        # Jeśli nie złapał nic, co wymaga GPT, daje prostą odpowiedź (powinno być rzadkie)
         else:
-            if intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
-                session["asked_context"] = True
-                session["last_intent"] = intent # Zapisz intencję przed pytaniem dopytującym
-                reply = FOLLOWUP_QUESTIONS[intent]
-                update_history(session, user_message, reply)
-                return jsonify({'reply': reply})
-            
-            # Jeśli nie było pytania dopytującego LUB jeśli użytkownik odpowiedział, ale nie słowem "tak"
-            # (np. "mam trądzik"), system i tak powinien trafić do GPT, jeśli odpowiedź jest złożona.
-            # Zostawiamy tu tylko obsługę prostych fraz, by uniknąć wielokrotnego trafiania do GPT przy prostych zapytaniach.
             session["last_intent"] = intent
             session["asked_context"] = False
             reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
@@ -297,12 +302,19 @@ def chat():
             return jsonify({'reply': reply})
 
     # === 3. FALLBACK GPT (Logika Eksperta z pełną wiedzą) ===
+    # Wszelkie nierozpoznane intencje, złożone pytania i potwierdzenia trafiają tutaj!
     
-    if not new_intent:
-        session["last_intent"] = None
+    # === KLUCZOWE WZMOCNIENIE FALLBACKU! ===
+    # Jeśli do tego momentu nie rozpoznano nowej intencji (new_intent jest None)
+    # I nie jest to czyste potwierdzenie ('tak'), które zostało obsłużone wcześniej
+    # ORAZ bot w poprzednim kroku nie zadawał pytania dopytującego (które ma być obsłużone przez GPT)
+    # ZMUSZAMY SYSTEM DO TRAFIENIA DO GPT Z NOWYM PYTANIEM.
+    if new_intent is None and not is_confirmation_only:
+        session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat.
         session["asked_context"] = False
-    
-    # --- WZMOCNIONY SYSTEM PROMPT ---
+    # **************************************
+        
+    # --- WZMOCNIONY SYSTEM PROMPT (Bez zmian od ostatniej wersji, jest już dobry) ---
     system_prompt = f"""
     {PMU_FULL_KNOWLEDGE}
 
@@ -311,7 +323,7 @@ def chat():
     2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
     3. **Unikaj formy "ja"**. Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
-    5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
+    5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. nietypowe pytania logistyczne, o których nie ma reguł, np. 'kto wykonuje zabieg?'), odpowiedz, że nie masz takiej informacji, ale **zalecasz kontakt telefoniczny z recepcją salonu, aby to potwierdzić** ({PHONE_NUMBER}). Nie wymyślaj reguł.
     6. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
     7. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
     8. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
@@ -327,7 +339,7 @@ def chat():
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.9, # Lekko zwiększone, by zwiększyć naturalność i zróżnicowanie odpowiedzi
+            temperature=0.9, 
             max_tokens=600,
             messages=messages
         )
@@ -336,7 +348,6 @@ def chat():
         reply = add_phone_once(reply, session, count)
         
     except Exception as e:
-        # === ULEPSZONA OBSŁUGA BŁĘDÓW ===
         reply = f"Przepraszamy, wystąpił chwilowy błąd komunikacji z naszym systemem. Prosimy o kontakt telefoniczny pod numerem {PHONE_NUMBER} lub spróbuj za chwilę 💔."
 
     update_history(session, user_message, reply)
