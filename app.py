@@ -7,13 +7,14 @@ from collections import deque
 # === DANE SALONU I WIEDZA (PRZENIESIONE Z knowledgeBase.ts) ===
 # TA WIEDZA JEST PRZEKAZYWANA DO GPT W FALLBACKU!
 PMU_FULL_KNOWLEDGE = """
-Jesteś **ekspertką/ekspertem salonu** z 20-letnim doświadczeniem w mikropigmentacji. Wypowiadasz się w imieniu salonu, używając formy "nasz salon," "eksperci robią," "klientka musi." Twoja wiedza jest techniczna, medyczna i praktyczna, ale przekazujesz ją w sposób zrozumiały i empatyczny dla klientki.
+Jesteś **ekspertką/ekspertem salonu** z 20-letnim doświadczeniem w mikropigmentacji. Wypowiadasz się w imieniu salonu, używając formy "nasz salon," "eksperci robią," "możemy doradzić."
 
 DANE SALONU:
 - Adres: ul. Junikowska 9
 - Godziny otwarcia: Poniedziałek - Piątek: 09:00 - 19:00
 - Kontakt: 881 622 882
 - Zespół: W naszym salonie zabiegi wykonuje certyfikowany i zgrany **zespół linergistek** z wieloletnim doświadczeniem. Każda z nich specjalizuje się w różnych aspektach makijażu permanentnego, co gwarantuje najwyższą jakość i dobór idealnej techniki. Aby potwierdzić personalia eksperta, który będzie Cię przyjmował, prosimy o kontakt telefoniczny z recepcją.
+- Czas trwania zabiegu: Około 2-3 godzin (w zależności od obszaru i techniki).
 
 DEFINICJE I FAKTY:
 - Makijaż permanentny (PMU/mikropigmentacja): Wprowadzenie pigmentu płytko do naskórka lub granicy naskórkowo-skórnej.
@@ -119,21 +120,20 @@ INTENT_PRIORITIES = [
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
-# === POMOCNICZE FUNKCJE (ZMIANA W add_phone_once) ===
+# === POMOCNICZE FUNKCJE (bez zmian) ===
 def detect_intent(text):
     scores = {}
     for intent, patterns in INTENT_KEYWORDS.items():
         score = sum(1 for p in patterns if re.search(p, text, re.IGNORECASE))
         if score > 0:
             scores[intent] = score
-    if not scores:
-        return None
-    best_intent = max(scores, key=scores.get)
-    tied = [i for i, s in scores.items() if s == scores[best_intent]]
-    if len(tied) > 1:
-        for p in INTENT_PRIORITIES:
-            if p in tied:
-                return p
+    best_intent = max(scores, key=scores.get) if scores else None
+    if best_intent:
+        tied = [i for i, s in scores.items() if s == scores[best_intent]]
+        if len(tied) > 1:
+            for p in INTENT_PRIORITIES:
+                if p in tied:
+                    return p
     return best_intent
 
 def emojis_for(intent):
@@ -148,7 +148,7 @@ def emojis_for(intent):
     return " ".join(random.sample(mapping.get(intent, ["✨", "🌸"]), 2))
 
 def add_phone_once(reply, session, count):
-    # ZMIANA: Zwiększenie częstotliwości podawania numeru telefonu z co 3. na co 5. wiadomość
+    # Częstotliwość podawania numeru telefonu (co 5. wiadomość)
     if count % 5 == 0 and not session["last_phone"]:
         reply += random.choice(PHONE_MESSAGES).replace('**', '') 
         session["last_phone"] = True
@@ -176,7 +176,7 @@ def start_message():
     SESSION_DATA[user_ip] = {
         "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
+    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -218,22 +218,29 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja"]):
-        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
-        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
+    # === NOWA REGUŁA: CZAS TRWANIA ZABIEGU ===
+    elif any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]):
+        reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
+        reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
-    
-    # === REGUŁA: KONSULTACJE ===
+
+
+    # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE MAJĄ PIERWSZEŃSTWO PRZED ZABIEGIEM ===
     elif any(w in text_lower for w in ["konsultacja", "doradztwo", "porada"]):
         # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
         reply = f"Oferujemy bezpłatne konsultacje. Skontaktuj się z nami telefonicznie: {PHONE_NUMBER}, aby ustalić dogodny termin spotkania i poruszyć wszystkie pytania 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
+    elif any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja"]):
+        # Numer telefonu podany celowo, ponieważ jest to odpowiedź na pytanie o rezerwację
+        reply = f"Chętnie umówimy Cię na zabieg! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Ci kontakt telefoniczny? {PHONE_NUMBER} 🌸"
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
     
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "mężem" "maz", "partner", "przyjaciółką", "przyjaciółka"]): 
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): 
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -252,8 +259,8 @@ def chat():
 
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
-    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Twoje obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
-    3. **Unikaj formy "ja"**. Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
+    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Pani obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
+    3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"** ("powinna Pani", "rozumiemy Pani obawy"). **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
     4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
     5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne, których nie obsługują reguły), zalecaj kontakt telefoniczny z recepcją salonu, aby to potwierdzić ({PHONE_NUMBER}).
     6. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
