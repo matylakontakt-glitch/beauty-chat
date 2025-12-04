@@ -176,7 +176,7 @@ def start_message():
     SESSION_DATA[user_ip] = {
         "message_count": 0, "last_intent": None, "last_phone": False, "history": deque()
     }
-    welcome_text = "Dzień dobry! Jesteśmy Twoją osobistą ekspertką od makijażu permanentnego. Chętnie doradzimy w wyborze najlepszej metody. O co chciałabyś zapytać? 🌸" 
+    welcome_text = "Dzień dobry! Jestem Twoją osobistą ekspertką od makijażu permanentnego. O co chciałabyś zapytać? 🌸" 
     update_history(SESSION_DATA[user_ip], "Cześć, kim jesteś?", welcome_text)
     return jsonify({'reply': welcome_text})
 
@@ -218,7 +218,7 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === NOWA REGUŁA: CZAS TRWANIA ZABIEGU ===
+    # === REGUŁA: CZAS TRWANIA ZABIEGU ===
     elif any(w in text_lower for w in ["ile trwa", "jak długo", "czas", "długo"]):
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
         reply = add_phone_once(reply, session, count)
@@ -253,19 +253,21 @@ def chat():
         session["last_intent"] = None # Resetujemy intencję, aby GPT potraktował to jako nowy, nieznany temat, który musi obsłużyć.
         
     
-    # --- WZMOCNIONY SYSTEM PROMPT ---
+    # --- WZMOCNIONY SYSTEM PROMPT (ZMIENIONY) ---
     system_prompt = f"""
     {PMU_FULL_KNOWLEDGE}
 
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
-    2. Ton: **BARDZO EMPATYCZNY, PROFESJONALNY i LUDZKI.** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Pani obawy", "To bardzo ważne pytanie", "Chętnie pomożemy", "W naszym salonie dbamy o...".
-    3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"** ("powinna Pani", "rozumiemy Pani obawy"). **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Unikaj powtarzania tych samych fraz i zawsze parafrazuj. Używaj emotek z wyczuciem (max 2).
-    4. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
-    5. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne, których nie obsługują reguły), zalecaj kontakt telefoniczny z recepcją salonu, aby to potwierdzić ({PHONE_NUMBER}).
-    6. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
-    7. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
-    8. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
+    2. Ton: **KOBIECY, BARDZO EMPATYCZNY, LEKKI i LUDZKI.** Twój styl powinien być **ciepły, wspierający i osobisty**, unikając technicznego żargonu tam, gdzie to możliwe, chyba że odpowiadasz na konkretne pytanie techniczne.
+    3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"** ("powinna Pani", "rozumiemy Pani obawy"). **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**.
+    4. **Emocje i Zaufanie:** Aktywnie używaj wyrażeń budujących zaufanie: "Rozumiemy Pani obawy", "To bardzo ważne pytanie, chętnie pomożemy", "W naszym salonie dbamy o...".
+    5. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Używaj emotek z wyczuciem (max 2).
+    6. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
+    7. **Brak Informacji:** Jeśli użytkownik pyta o rzecz, która **nie jest zawarta** w bazie wiedzy (np. skomplikowane pytania logistyczne, których nie obsługują reguły), zalecaj kontakt telefoniczny z recepcją salonu, aby to potwierdzić ({PHONE_NUMBER}).
+    8. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście, aby zwiększyć czytelność. (Nie używaj symboli *).
+    9. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
+    10. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę lub termin/rezerwację, użyj informacji z DANYCH SALONU i ZACHĘCAJ do kontaktu telefonicznego pod numerem: {PHONE_NUMBER}.
     """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -295,7 +297,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
