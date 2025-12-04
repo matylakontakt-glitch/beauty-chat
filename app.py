@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
-import os, random
+import os, random, re
 
 # === INICJALIZACJA ===
 load_dotenv()
@@ -20,61 +20,61 @@ PRICE_LIST = {
 # === BAZA WIEDZY ===
 KNOWLEDGE = {
     "przeciwwskazania": [
-        "Zabieg nie jest wykonywany w ciąży, podczas karmienia piersią, przy infekcjach, chorobach nowotworowych lub przyjmowaniu sterydów i retinoidów.",
-        "Przed zabiegiem nie pij kawy ani alkoholu — kofeina i alkohol rozrzedzają krew i mogą utrudniać pigmentację oraz wpłynąć na trwałość efektu."
+        "Zabieg nie jest wykonywany w ciąży ani podczas karmienia piersią 🌿💋",
+        "Aktywne infekcje, nowotwory, kuracja sterydami lub retinoidami — wtedy zabiegu nie wykonujemy 🌿💋",
+        "Przed zabiegiem nie pij kawy ani alkoholu — kofeina i alkohol rozrzedzają krew, co może utrudnić przyjęcie pigmentu 🌿💋"
     ],
     "pielęgnacja": [
-        "Po zabiegu nie dotykaj, nie drap i nie zrywaj strupków. Skóra goi się około 7 dni, a kolor stabilizuje po 30 dniach.",
-        "Unikaj słońca, sauny, basenu i intensywnego wysiłku przez minimum tydzień.",
-        "Brwi po zabiegu przemywaj przegotowaną wodą 3–5 razy dziennie przez pierwsze 3 dni, potem delikatnie nawilżaj cienką warstwą preparatu."
+        "Po zabiegu nie drap i nie zrywaj strupków; skóra goi się ok. 7 dni, a kolor stabilizuje po ~30 dniach 🌿✨",
+        "Przez tydzień unikaj słońca, sauny, basenu i intensywnego wysiłku 🌿✨",
+        "Brwi przemywaj przegotowaną wodą 3–5× dziennie przez pierwsze 3 dni, potem delikatnie nawilżaj cienką warstwą preparatu 🌿✨"
     ],
     "techniki_brwi": [
-        "Metoda pudrowa (Powder Brows) daje miękki, cieniowany efekt przypominający makijaż cieniem — idealna dla każdego typu skóry.",
-        "Metoda ombre tworzy delikatny gradient: jaśniejsze brwi u nasady i ciemniejsze na końcach, dla naturalnego efektu 3D.",
-        "Metoda łączona (Hybrid) łączy włoski z przodu z delikatnym cieniem w dalszej części brwi — naturalny, ale wyrazisty efekt.",
-        "Nano Brows (pixelowa technika) to bardzo precyzyjne kropkowanie, które daje efekt hiperrealistycznych brwi."
+        "W naszym salonie wykonujemy dwie metody brwi: • Powder Brows — miękki efekt cienia • Ombre — jaśniejsze u nasady, ciemniejsze na końcach ✨🌸",
+        "Powder Brows: delikatny, pudrowy cień. Ombre: subtelny gradient (jaśniej przy nasadzie, ciemniej na końcu łuku) ✨🌸"
     ],
     "techniki_usta": [
-        "Lip Blush to delikatne podkreślenie naturalnego koloru ust — efekt świeżych, lekko zaróżowionych warg.",
-        "Full Lip Color zapewnia jednolite, pełne wypełnienie kolorem, przypominające klasyczną szminkę.",
-        "Kontur ust (Lip Liner) pozwala wyrównać kształt i subtelnie podkreślić linię warg, zachowując naturalność."
+        "Najczęstsze techniki ust: • Lip Blush — naturalny rumieniec • Kontur ust — subtelne zdefiniowanie linii • Full Lip Color — pełne, równomierne wypełnienie 💋💄",
+        "Lip Blush daje lekki, świeży kolor; Full Lip Color — efekt klasycznej szminki; Kontur wyrównuje kształt ust 💋💄"
     ],
     "trwalosc": [
-        "Efekt makijażu permanentnego utrzymuje się średnio 1–3 lata. Po tym czasie zalecane jest odświeżenie pigmentu.",
-        "Zbyt szybkie blaknięcie może wynikać z tłustej cery, ekspozycji na słońce lub nieprzestrzegania zaleceń pozabiegowych.",
-        "Trwałość zależy od pielęgnacji, typu skóry i indywidualnych procesów regeneracji."
+        "Efekt utrzymuje się zwykle 1–3 lata; zależy od pielęgnacji, fototypu i stylu życia ✨💄",
+        "Szybsze blaknięcie bywa przy cerze tłustej, częstej ekspozycji na słońce lub braku zaleceń pozabiegowych ✨💄"
     ],
     "fakty_mity": [
-        "Zabieg nie jest bolesny — dzięki znieczuleniu większość klientek czuje tylko lekkie szczypanie.",
-        "Makijaż permanentny nie powoduje wypadania włosków — pigment wprowadzany jest bardzo płytko.",
-        "To nie tatuaż — pigment z czasem naturalnie blednie, dlatego po roku lub dwóch warto zrobić odświeżenie."
+        "Dzięki znieczuleniu większość klientek czuje jedynie lekkie szczypanie ✨🌸",
+        "PMU nie powoduje wypadania włosków — pigment jest wprowadzany płytko ✨🌸",
+        "Makijaż permanentny jest półtrwały — naturalnie blednie i wymaga odświeżenia ✨🌸"
     ]
 }
 
 # === SŁOWA KLUCZOWE ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
-        "przeciwwskaz", "chorob", "lek", "tablet", "ciąża", "kawa", "pić kaw", "napój",
-        "alkohol", "wino", "piwo", "izotek", "heviran", "hormony"
+        "przeciwwskaz", "chorob", "lek", "tablet", "ciąża", "w ciazy", "w ciąży",
+        "kawa", "pić kaw", "espresso", "latte", "kofein",
+        "alkohol", "wino", "piwo", "izotek", "retinoid", "steroid", "heviran", "hormony"
     ],
     "pielęgnacja": [
-        "pielęgnac", "gojenie", "po zabiegu", "dbac", "dbanie", "po wszystkim",
-        "strup", "łuszcz", "smarowac", "złuszczanie"
+        "pielęgnac", "gojenie", "po zabiegu", "strup", "strupk", "łuszcz", "złuszcz",
+        "smarow", "myc", "myć", "jak dbac", "jak dbać"
     ],
     "techniki_brwi": [
-        "brwi", "ombre", "pudrow", "powder", "microblading", "hybrid", "pixel", "nano"
+        "brwi", "powder", "pudrow", "ombre", "metoda pudrowa", "metoda ombre",
+        "metody brwi", "pigmentacji brwi"
     ],
     "techniki_usta": [
-        "usta", "lip", "blush", "kontur", "liner", "full lip", "aquarelle", "ust", "wargi"
+        "usta", "ust", "wargi", "lip", "blush", "kontur", "liner", "full lip", "aquarelle"
     ],
     "trwalosc": [
-        "utrzymuje", "trwa", "blak", "kolor", "odświeżenie", "zanika", "blednie", "czas", "trwałość"
+        "utrzymuje", "trwa", "blak", "blednie", "zanika", "odświeżenie", "kolor", "czas", "trwałość"
     ],
     "fakty_mity": [
-        "mit", "fakt", "bol", "ból", "włoski", "usuwa", "laser", "prawda", "fałsz"
+        "mit", "fakt", "bol", "ból", "prawda", "fałsz", "laser", "remover"
     ]
 }
 
+# Kolejność rozstrzygania przy konfliktach
 INTENT_PRIORITIES = [
     "przeciwwskazania",
     "pielęgnacja",
@@ -84,11 +84,12 @@ INTENT_PRIORITIES = [
     "fakty_mity"
 ]
 
+# Pytania dopytujące
 FOLLOWUP_QUESTIONS = {
-    "techniki_brwi": "Czy pytasz o metody makijażu brwi, jak pudrowa czy ombre?",
-    "techniki_usta": "Czy chodzi Ci o techniki ust, np. Lip Blush albo Full Lip Color?",
-    "trwalosc": "Czy pytasz, bo dopiero rozważasz zabieg, czy masz już wykonany i chcesz wiedzieć, jak długo efekt się utrzymuje?",
-    "pielęgnacja": "Czy chodzi Ci o pielęgnację po zabiegu, czy o przygotowanie przed pierwszym PMU?"
+    "techniki_brwi": "Czy pytasz o metody brwi (Powder vs Ombre)?",
+    "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?",
+    "trwalosc": "Pytasz przed zabiegiem czy już po — chcesz wiedzieć, jak długo trzyma efekt?",
+    "pielęgnacja": "Chodzi o przygotowanie przed zabiegiem czy pielęgnację po?"
 }
 
 # === SESJE ===
@@ -108,7 +109,7 @@ def start_message():
     )
     return jsonify({'reply': welcome_text})
 
-# === FUNKCJE POMOCNICZE ===
+# === POMOCNICZE ===
 def detect_intent(text):
     scores = {}
     for intent, words in INTENT_KEYWORDS.items():
@@ -125,7 +126,7 @@ def detect_intent(text):
                 return p
     return best_intent
 
-def get_emojis_for_intent(intent):
+def emojis_for(intent):
     mapping = {
         "przeciwwskazania": ["🌿", "💋"],
         "pielęgnacja": ["🌿", "✨"],
@@ -134,11 +135,20 @@ def get_emojis_for_intent(intent):
         "trwalosc": ["💄", "✨"],
         "fakty_mity": ["🌸", "✨"]
     }
-    if intent in mapping:
-        return " ".join(random.sample(mapping[intent], min(2, len(mapping[intent]))))
-    return random.choice(["💋", "✨", "🌿"])
+    return " ".join(random.sample(mapping.get(intent, ["✨", "🌸"]), 2))
 
-# === GŁÓWNY ENDPOINT CHATU ===
+def add_phone_once(reply, session, count):
+    if count % 3 == 0 and not session["last_phone"]:
+        reply += random.choice([
+            "\n\nJeśli chcesz, mogę pomóc dobrać termin 💋 881 622 882",
+            "\n\nMasz ochotę na konsultację? Zadzwoń: 881 622 882 🌿"
+        ])
+        session["last_phone"] = True
+    else:
+        session["last_phone"] = False
+    return reply
+
+# === GŁÓWNY ENDPOINT ===
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json(silent=True) or {}
@@ -149,59 +159,49 @@ def chat():
     if not user_message:
         return jsonify({'reply': 'Napisz coś, żebym mogła Ci pomóc 💬'})
 
-    # Sesja
+    # Sesja użytkownika
     if user_ip not in SESSION_DATA:
         SESSION_DATA[user_ip] = {"message_count": 0, "last_intent": None, "asked_context": False, "last_phone": False}
-    SESSION_DATA[user_ip]["message_count"] += 1
-    count = SESSION_DATA[user_ip]["message_count"]
+    session = SESSION_DATA[user_ip]
+    session["message_count"] += 1
+    count = session["message_count"]
 
     # === CENNIK ===
     if any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
-        if count % 3 == 0 and not SESSION_DATA[user_ip]["last_phone"]:
-            all_prices += "\n\nJeśli chcesz, mogę pomóc dobrać termin 💋 881 622 882"
-            SESSION_DATA[user_ip]["last_phone"] = True
-        else:
-            SESSION_DATA[user_ip]["last_phone"] = False
-        return jsonify({'reply': all_prices})
+        reply = add_phone_once(all_prices, session, count)
+        return jsonify({'reply': reply})
 
     # === TERMINY ===
     if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
         reply = "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸"
-        if count % 3 == 0 and not SESSION_DATA[user_ip]["last_phone"]:
-            reply += " Zadzwoń: 881 622 882 💋"
-            SESSION_DATA[user_ip]["last_phone"] = True
-        else:
-            SESSION_DATA[user_ip]["last_phone"] = False
+        reply = add_phone_once(reply, session, count)
         return jsonify({'reply': reply})
 
-    # === INTENCJE ===
-    intent = detect_intent(text_lower) or SESSION_DATA[user_ip].get("last_intent")
-    SESSION_DATA[user_ip]["last_intent"] = intent
+    # === INTENCJA ===
+    intent = detect_intent(text_lower) or session.get("last_intent")
+    session["last_intent"] = intent
 
+    # === Specjalny wyjątek: pytanie o kawę ===
+    if "kaw" in text_lower or "espresso" in text_lower or "latte" in text_lower:
+        reply = "Przed zabiegiem nie pij kawy — kofeina rozrzedza krew i może pogorszyć przyjęcie pigmentu 🌿💋"
+        return jsonify({'reply': reply})
+
+    # === Jeśli znaleziono intencję z bazy wiedzy ===
     if intent and intent in KNOWLEDGE:
-        if not SESSION_DATA[user_ip]["asked_context"] and intent in FOLLOWUP_QUESTIONS:
-            SESSION_DATA[user_ip]["asked_context"] = True
+        if not session["asked_context"] and intent in FOLLOWUP_QUESTIONS:
+            session["asked_context"] = True
             return jsonify({'reply': FOLLOWUP_QUESTIONS[intent]})
-        reply = random.choice(KNOWLEDGE[intent])
-        reply += " " + get_emojis_for_intent(intent)
-        if count % 3 == 0 and not SESSION_DATA[user_ip]["last_phone"]:
-            reply += random.choice([
-                "\n\nJeśli chcesz, mogę pomóc dobrać termin 💋 881 622 882",
-                "\n\nMasz ochotę na konsultację? Zadzwoń: 881 622 882 🌿"
-            ])
-            SESSION_DATA[user_ip]["last_phone"] = True
-        else:
-            SESSION_DATA[user_ip]["last_phone"] = False
+        reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
+        reply = add_phone_once(reply, session, count)
         return jsonify({'reply': reply})
 
-    # === FALLBACK GPT ===
+    # === FALLBACK GPT (gdy nie pasuje żadna kategoria) ===
     system_prompt = (
         "Jesteś Beauty Chat — inteligentną, empatyczną asystentką salonu PMU. "
-        "Odpowiadasz konkretnie, z klasą i kobiecą lekkością. "
-        "Nie wymyślasz nowych informacji, korzystasz tylko z wiedzy o makijażu permanentnym brwi i ust. "
-        "Nie wspominaj o promocjach. Nie powtarzaj się. "
-        "Używaj maksymalnie dwóch emotek (💋✨🌿💄🌸) z wyczuciem."
+        "Odpowiadasz krótko, konkretnie i kobieco. "
+        "Używasz maksymalnie 2 emotek z wyczuciem. "
+        "Nie wymyślasz rzeczy spoza makijażu permanentnego brwi i ust."
     )
 
     try:
@@ -220,8 +220,7 @@ def chat():
 
     return jsonify({'reply': reply})
 
-
-# === URUCHOMIENIE ===
+# === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
 
