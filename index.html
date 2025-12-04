@@ -100,6 +100,14 @@ h2 {
   border-radius: 20px;
   padding: 8px 14px;
   display: inline-block;
+  white-space: normal;
+  line-height: 1.7;
+}
+
+.message-content strong {
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(255,255,255,0.15);
 }
 
 /* === Wiadomości użytkownika (po prawej) === */
@@ -277,15 +285,20 @@ const input = document.getElementById('message');
 const chat = document.getElementById('chat');
 const sendBtn = document.getElementById('sendBtn');
 
-// Dodaj wiadomość
+// 🔹 Formatowane dodawanie wiadomości
 function addMessage(text, sender) {
   const msg = document.createElement('div');
   msg.classList.add('message', sender);
 
   if (sender === 'bot') {
+    let formatted = text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // pogrubienie markdown
+      .replace(/\n{2,}/g, "<br><br>")                    // duży odstęp (2+ nowe linie)
+      .replace(/\n/g, "<br>");                           // zwykły enter = nowa linia
+
     msg.innerHTML = `
       <div class="avatar">P</div>
-      <div class="message-content">${text}</div>
+      <div class="message-content">${formatted}</div>
     `;
   } else {
     msg.innerHTML = `<div class="message-content">${text}</div>`;
@@ -357,6 +370,7 @@ sendBtn.addEventListener('click', sendMessage);
 </script>
 </body>
 </html>
+
 
 
 
