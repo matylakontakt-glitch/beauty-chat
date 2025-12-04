@@ -34,14 +34,12 @@ TECHNIKI - USTA:
 - Full Lip Color: Efekt szminki.
 - Wymagana osłona przeciwwirusowa (Heviran) 3 dni przed i 3 dni po zabiegu (profilaktyka opryszczki).
 
-TECHNIKI - OCZY:
-- Zagęszczenie linii rzęs: Pigment między rzęsami (efekt gęstszych rzęs).
-- Eyeliner dekoracyjny: Widoczna kreska (jaskółka).
+**UWAGA: W naszym salonie nie wykonujemy makijażu permanentnego powiek (eyeliner/zagęszczenie linii rzęs), skupiamy się wyłącznie na brwiach i ustach.**
 
 PRZECIWWSKAZANIA (BEZPIECZEŃSTWO):
 - Bezwzględne: Ciąża, laktacja, nowotwory (bez zgody lekarza), aktywne infekcje, łuszczyca w miejscu zabiegu.
 - Czasowe (Karencja):
-  * Odżywki do rzęs: Odstawić 3-6 mies. przed zabiegiem oczu (powodują przekrwienie).
+  * Odżywki do rzęs: Odstawić 3-6 mies. przed zabiegiem (jeśli planowany zabieg na oczy, ale my go nie wykonujemy).
   * Retinoidy/Izotek: Odstawić 6 mies. przed (ryzyko blizn).
   * Kwas hialuronowy w ustach: Odstęp 4 tyg.
   * Leki rozrzedzające krew (aspiryna): Odstawić 24h przed.
@@ -110,7 +108,8 @@ INTENT_KEYWORDS = {
         r"\butrzymuje\w*", r"\btrwa\w*", r"\bblak\w*", r"\bblednie\w*", r"\bzanika\w*", r"\bodświeżeni\w*", r"\bkolor\w*", r"\bczas\w*", r"\btrwałość\w*"
     ],
     "fakty_mity": [
-        r"\bmit\w*", r"\bfakt\w*", r"\bbol\w*", r"\ból\w*", r"\bprawda\w*", r"\bfałsz\w*", r"\blaser\w*", r"\bremover\w*", r"\bmaszyna\w*"
+        r"\bmit\w*", r"\bfakt\w*", r"\bbol\w*", r"\ból\w*", r"\bprawda\w*", r"\bfałsz\w*", r"\blaser\w*", r"\bremover\w*", r"\bmaszyna\w*",
+        r"\beyeliner\w*", r"\boczy\w*", r"\b powieki\w*", # Dodano słowa kluczowe dotyczące PMU oczu
     ]
 }
 INTENT_PRIORITIES = [
@@ -234,6 +233,12 @@ def chat():
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
+        
+    # === REGUŁA: O CZYMŚ, CZEGO NIE ROBIMY (PMU OCZU/Eyeliner) ===
+    elif any(w in text_lower for w in ["oczy", "powieki", "eyeliner", "zagęszczen"]):
+        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach**, aby zapewnić najwyższą jakość i specjalizację w tych obszarach. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
 
     # === WŁAŚCIWA KOLEJNOŚĆ: KONSULTACJE ORAZ TERMINY ===
     
@@ -258,11 +263,9 @@ def chat():
         return jsonify({'reply': reply})
         
     
-    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    # Zmieniona, aby kategorycznie wykluczyć wszystkie osoby towarzyszące.
+    # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) - WZMOCNIONA ORAZ BEZ PROPOZYCJI REZERWACJI ===
     elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka", "koleżank"]): 
-        reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w trakcie trwania zabiegu. Dziękujemy za zrozumienie! 😊"
-        reply = add_phone_once(reply, session, count)
+        reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
@@ -317,7 +320,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
