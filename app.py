@@ -202,7 +202,16 @@ def chat():
     intent = new_intent or session.get("last_intent") 
     
     # === 1. OBSŁUGA CEN, CZASU I REGUŁY KRYTYCZNE (PRIORYTET 1) ===
-    if any(w in text_lower for w in ["ile go\w*", "jak dlugo sie go\w*", "czas gojeni\w*", "gojenie trwa\w*", "goi się\w*"]):
+
+    # ** REGUŁA CENOWA (PRIORYTET 1) **
+    if any(word in text_lower for word in ["ile\w*", "koszt\w*", "kosztuje\w*", "cena\w*", "za ile\w*", "cennik\w*"]):
+        all_prices = "\n\n".join(PRICE_LIST.values())
+        reply = "Oto nasz aktualny cennik:\n\n" + all_prices
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    elif any(w in text_lower for w in ["ile go\w*", "jak dlugo sie go\w*", "czas gojeni\w*", "gojenie trwa\w*", "goi się\w*"]):
         reply = "Pełny proces gojenia dzieli się na etapy: **Faza Sączenia** (Dni 1-3) oraz **Łuszczenie się naskórka** (Dni 4-10, pojawiają się mikrostrupki, których nie wolno zdrapywać!). Pełna **stabilizacja koloru** następuje po około **28 dniach** (cykl odnowy naskórka). ✨"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
@@ -222,13 +231,6 @@ def chat():
 
     elif any(w in text_lower for w in ["ile trwa\w*", "jak długo\w*", "czas\w*", "długo\w*"]) and any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
         reply = "Bezpłatna konsultacja trwa **około 1 godziny**. Jest to czas przeznaczony na omówienie szczegółów, wybór metody, kolorów i odpowiedzi na Pani wszystkie pytania. 🌿"
-        reply = add_phone_once(reply, session, count)
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
-        
-    elif any(word in text_lower for word in ["ile\w*", "koszt\w*", "kosztuje\w*", "cena\w*", "za ile\w*", "cennik\w*"]):
-        all_prices = "\n\n".join(PRICE_LIST.values())
-        reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -322,7 +324,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
