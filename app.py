@@ -153,7 +153,7 @@ def chat():
     session["message_count"] += 1
     count = session["message_count"]
 
-    # === REGUŁA: OSOBY TOWARZYSZĄCE / DZIECI / ZWIERZĘTA ===
+    # === REGUŁA: OSOBY TOWARZYSZĄCE / DZIECI / ZWIERZĘTA (Priorytet 1) ===
     if re.search(
         r"\b("
         r"m[aą]ż|m[eę]żem|maz|z\s+m[eę]żem|"
@@ -196,6 +196,26 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
+    # === REGUŁA: CZAS TRWANIA ZABIEGU ===
+    if any(w in text_lower for w in ["ile trwa", "jak dlugo", "dlugo", "czas"]) and not any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
+        reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje konsultację, rysunek wstępny i samą pigmentację. Prosimy o rezerwację odpowiedniej ilości czasu. 😊"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    # === REGUŁA: CZAS TRWANIA KONSULTACJI ===
+    if any(w in text_lower for w in ["ile trwa", "jak dlugo", "dlugo", "czas"]) and any(w in text_lower for w in ["konsultacj", "doradztwo", "porada"]):
+        reply = "Bezpłatna konsultacja trwa **około 1 godziny**. To czas na omówienie szczegółów, wybór metody i kolorów. 🌿"
+        reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    # === REGUŁA: O CZYMŚ, CZEGO NIE ROBIMY (PMU OCZU) ===
+    if any(w in text_lower for w in ["oczy", "powieki", "eyeliner", "zagęszczen"]):
+        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach**, aby zapewnić najwyższą specjalizację. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Prosimy o kontakt w sprawie brwi lub ust: {PHONE_NUMBER} 💋."
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
     # === REGUŁA: UMÓWIENIE ZABIEGU (z poprawką „po/przed zabiegu”) ===
     if (
         any(w in text_lower for w in ["umówić", "zapis", "wolne", "rezerwacja"]) or
@@ -222,7 +242,10 @@ def chat():
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini", temperature=0.8, max_tokens=600, messages=messages
+            model="gpt-4o-mini",
+            temperature=0.8,
+            max_tokens=600,
+            messages=messages
         )
         reply = completion.choices[0].message.content.strip()
         reply = add_phone_once(reply, session, count)
@@ -232,9 +255,11 @@ def chat():
     update_history(session, user_message, reply)
     return jsonify({'reply': reply})
 
+
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+
 
 
 
