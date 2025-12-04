@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
 import os, random, re
+from collections import deque # Dodajemy dla lepszej obsługi historii
 
 # === INICJALIZACJA ===
 load_dotenv()
@@ -49,42 +50,38 @@ KNOWLEDGE = {
 }
 
 # === SŁOWA KLUCZOWE ===
+# Używamy surowych stringów (r'') dla lepszej czytelności i bezpieczeństwa z RegExp
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
-        "przeciwwskaz", "chorob", "lek", "tablet", "ciąża", "w ciazy", "w ciąży",
-        "kawa", "pić kaw", "espresso", "latte", "kofein",
-        "alkohol", "wino", "piwo", "izotek", "retinoid", "steroid", "heviran", "hormony"
+        r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąż\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
+        r"\bkaw\w*", r"\bpi\w+\s+kaw\w*", r"\bespresso\w*", r"\blatte\w*", r"\bkofein\w*",
+        r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
     ],
     "pielęgnacja": [
-        "pielęgnac", "gojenie", "po zabiegu", "strup", "strupk", "łuszcz", "złuszcz",
-        "smarow", "myc", "myć", "jak dbac", "jak dbać"
+        r"\bpielęgnac\w*", r"\bgojenie\w*", r"\bpo\s+zabiegu\w*", r"\bstrup\w*", r"\błuszcz\w*", r"\bzłuszcz\w*",
+        r"\bsmarow\w*", r"\bmyc\w*", r"\bmyć\w*", r"\bjak\s+dbac\w*", r"\bjak\s+dbać\w*", r"\bprzygotowan\w*"
     ],
     "techniki_brwi": [
-        "brwi", "powder", "pudrow", "ombre", "metoda pudrowa", "metoda ombre",
-        "metody brwi", "pigmentacji brwi"
+        r"\bbrwi\w*", r"\bpowder\w*", r"\bpudrow\w*", r"\bombre\w*", r"\bmetoda\s+pudrowa\w*", r"\bmetoda\s+ombre\w*",
+        r"\bmetody\s+brwi\w*", r"\bpigmentacj\w+\s+brwi\w*"
     ],
     "techniki_usta": [
-        "usta", "ust", "wargi", "lip", "blush", "kontur", "liner", "full lip", "aquarelle"
+        r"\busta\w*", r"\bust\w*", r"\bwargi\w*", r"\blip\w*", r"\bblush\w*", r"\bkontur\w*", r"\bliner\w*", r"\bfull\s+lip\w*", r"\baquarelle\w*"
     ],
     "trwalosc": [
-        "utrzymuje", "trwa", "blak", "blednie", "zanika", "odświeżenie", "kolor", "czas", "trwałość"
+        r"\butrzymuje\w*", r"\btrwa\w*", r"\bblak\w*", r"\bblednie\w*", r"\bzanika\w*", r"\bodświeżeni\w*", r"\bkolor\w*", r"\bczas\w*", r"\btrwałość\w*"
     ],
     "fakty_mity": [
-        "mit", "fakt", "bol", "ból", "prawda", "fałsz", "laser", "remover"
+        r"\bmit\w*", r"\bfakt\w*", r"\bbol\w*", r"\ból\w*", r"\bprawda\w*", r"\bfałsz\w*", r"\blaser\w*", r"\bremover\w*", r"\bmaszyna\w*"
     ]
 }
 
 # Kolejność rozstrzygania przy konfliktach
 INTENT_PRIORITIES = [
-    "przeciwwskazania",
-    "pielęgnacja",
-    "techniki_brwi",
-    "techniki_usta",
-    "trwalosc",
-    "fakty_mity"
+    "przeciwwskazania", "pielęgnacja", "techniki_brwi", "techniki_usta", "trwalosc", "fakty_mity"
 ]
 
-# Pytania dopytujące
+# Pytania dopytujące (Zostawiamy, ale poprawimy ich użycie)
 FOLLOWUP_QUESTIONS = {
     "techniki_brwi": "Czy pytasz o metody brwi (Powder vs Ombre)?",
     "techniki_usta": "Chodzi o techniki ust (Lip Blush / Kontur / Full Lip Color)?",
@@ -93,6 +90,9 @@ FOLLOWUP_QUESTIONS = {
 }
 
 # === SESJE ===
+# Używamy deque do historii dla automatycznego usuwania starych wiadomości
+# Limit historii: 10 wiadomości (5 par W-O)
+HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
 # === STRONA GŁÓWNA ===
@@ -107,19 +107,31 @@ def start_message():
         "Cześć! 👋 Jestem Beauty Ekspertką salonu — chętnie odpowiem na Twoje pytania o makijaż permanentny brwi i ust 💋✨\n"
         "\nO co chciałabyś zapytać na początek?"
     )
+    # Resetuj sesję przy każdym /start
+    user_ip = request.remote_addr or "default"
+    SESSION_DATA[user_ip] = {
+        "message_count": 0, "last_intent": None, "asked_context": False, 
+        "last_phone": False, "history": deque()
+    }
     return jsonify({'reply': welcome_text})
 
 # === POMOCNICZE ===
 def detect_intent(text):
     scores = {}
-    for intent, words in INTENT_KEYWORDS.items():
-        score = sum(1 for w in words if w in text)
+    
+    # Używamy re.search dla elastycznego dopasowania RegExp
+    for intent, patterns in INTENT_KEYWORDS.items():
+        score = sum(1 for p in patterns if re.search(p, text, re.IGNORECASE))
         if score > 0:
             scores[intent] = score
+    
     if not scores:
         return None
+    
+    # Wybieranie najlepszej intencji na podstawie score (a w przypadku remisu, priorytetu)
     best_intent = max(scores, key=scores.get)
     tied = [i for i, s in scores.items() if s == scores[best_intent]]
+    
     if len(tied) > 1:
         for p in INTENT_PRIORITIES:
             if p in tied:
@@ -148,6 +160,16 @@ def add_phone_once(reply, session, count):
         session["last_phone"] = False
     return reply
 
+def update_history(session, user_msg, bot_reply):
+    # Ograniczenie historii do HISTORY_LIMIT
+    session["history"].append(("user", user_msg))
+    if len(session["history"]) > HISTORY_LIMIT:
+        session["history"].popleft()
+    
+    session["history"].append(("assistant", bot_reply))
+    if len(session["history"]) > HISTORY_LIMIT:
+        session["history"].popleft()
+    
 # === GŁÓWNY ENDPOINT ===
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -155,69 +177,105 @@ def chat():
     user_message = (data.get('message') or '').strip()
     user_ip = request.remote_addr or "default"
     text_lower = user_message.lower()
+    
+    # Inicjalizacja sesji jeśli nie istnieje
+    if user_ip not in SESSION_DATA:
+         SESSION_DATA[user_ip] = {
+            "message_count": 0, "last_intent": None, "asked_context": False, 
+            "last_phone": False, "history": deque()
+        }
 
     if not user_message:
-        return jsonify({'reply': 'Napisz coś, żebym mogła Ci pomóc 💬'})
+        reply = 'Napisz coś, żebym mogła Ci pomóc 💬'
+        update_history(SESSION_DATA[user_ip], user_message, reply)
+        return jsonify({'reply': reply})
 
-    # Sesja użytkownika
-    if user_ip not in SESSION_DATA:
-        SESSION_DATA[user_ip] = {"message_count": 0, "last_intent": None, "asked_context": False, "last_phone": False}
     session = SESSION_DATA[user_ip]
     session["message_count"] += 1
     count = session["message_count"]
+    
+    # Domyślna odpowiedź na koniec, jeśli żaden warunek się nie spełni
+    reply = ""
 
-    # === CENNIK ===
+    # Reset flagi kontekstu, jeśli użytkownik zmienił temat
+    new_intent = detect_intent(text_lower)
+    if new_intent and new_intent != session["last_intent"]:
+        session["asked_context"] = False
+    
+    # Używamy intent, który jest aktualny lub był ostatnio aktywny (kontekst)
+    intent = new_intent or session.get("last_intent")
+
+    # === 1. CENNIK (Najwyższy priorytet) ===
     if any(word in text_lower for word in ["ile", "koszt", "kosztuje", "cena", "za ile", "cennik"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = add_phone_once(all_prices, session, count)
+        update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === TERMINY ===
+    # === 2. TERMINY (Wysoki priorytet) ===
     if any(w in text_lower for w in ["termin", "umówić", "zapis", "wolne", "rezerwacja", "kiedy", "dostępny"]):
         reply = "Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy 🌸"
         reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === INTENCJA ===
-    intent = detect_intent(text_lower) or session.get("last_intent")
-    session["last_intent"] = intent
-
-    # === Specjalny wyjątek: pytanie o kawę ===
-    if "kaw" in text_lower or "espresso" in text_lower or "latte" in text_lower:
-        reply = "Przed zabiegiem nie pij kawy — kofeina rozrzedza krew i może pogorszyć przyjęcie pigmentu 🌿💋"
-        return jsonify({'reply': reply})
-
-    # === Jeśli znaleziono intencję z bazy wiedzy ===
+    # === 3. BAZA WIEDZY (Jeśli znaleziono intencję) ===
     if intent and intent in KNOWLEDGE:
-        if not session["asked_context"] and intent in FOLLOWUP_QUESTIONS:
-            session["asked_context"] = True
-            return jsonify({'reply': FOLLOWUP_QUESTIONS[intent]})
+        
+        # Logika pytań dopytujących - Zadawaj TYLKO, jeśli kontekst nie został jeszcze określony
+        if intent in FOLLOWUP_QUESTIONS and not session["asked_context"]:
+            session["asked_context"] = True # Oznacz, że zapytaliśmy
+            # Nie ustawiaj last_intent, aby przy kolejnej wiadomości system spróbował wrócić do bazy wiedzy
+            reply = FOLLOWUP_QUESTIONS[intent]
+            update_history(session, user_message, reply)
+            return jsonify({'reply': reply})
+        
+        # Jeśli kontekst jest już określony LUB intencja nie wymaga dopytywania
+        session["last_intent"] = intent # Ustaw kontekst (do następnego razu)
+        session["asked_context"] = False # Resetuj
         reply = random.choice(KNOWLEDGE[intent]) + " " + emojis_for(intent)
         reply = add_phone_once(reply, session, count)
+        update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # === FALLBACK GPT (gdy nie pasuje żadna kategoria) ===
+    # === 4. FALLBACK GPT (Gdy nie pasuje żadna kategoria) ===
+    
+    # Jeśli nowa intencja nie została znaleziona, a ostatnia była ustawiona na coś,
+    # co nie było w KNOWLEDGE (np. w poprzedniej pętli fallback), spróbuj ją wyczyścić
+    if not new_intent:
+        session["last_intent"] = None
+        session["asked_context"] = False
+
     system_prompt = (
-        "Jesteś Beauty Chat — inteligentną, empatyczną asystentką salonu PMU. "
-        "Odpowiadasz krótko, konkretnie i kobieco. "
-        "Używasz maksymalnie 2 emotek z wyczuciem. "
-        "Nie wymyślasz rzeczy spoza makijażu permanentnego brwi i ust."
+        "Jesteś Beauty Chat — inteligentną, empatyczną asystentką salonu makijażu permanentnego (PMU). "
+        "Twoja rola to odpowiadanie na pytania dotyczące PMU brwi i ust. "
+        "Odpowiadasz krótko, konkretnie i kobieco. Używasz maksymalnie 2 emotek z wyczuciem. "
+        "Nie wymyślasz informacji. Jeśli pytanie jest poza obszarem PMU brwi/ust, grzecznie sugeruj kontakt z obsługą klienta."
     )
+
+    # Konstruowanie historii wiadomości dla GPT
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Dodanie wcześniejszych wiadomości z historii sesji
+    for role, content in session["history"]:
+        # Używamy role: "user" lub "assistant"
+        messages.append({"role": role, "content": content})
+        
+    # Dodanie aktualnej wiadomości użytkownika
+    messages.append({"role": "user", "content": user_message})
 
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
-            temperature=0.5,
+            temperature=0.7, # Zwiększono, aby odpowiedzi były bardziej naturalne
             max_tokens=600,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ]
+            messages=messages # Przekazujemy całą historię
         )
         reply = completion.choices[0].message.content.strip()
     except Exception as e:
-        reply = f"Ups! Coś poszło nie tak 💔 ({e})"
+        reply = f"Ups! Coś poszło nie tak 💔 Spróbuj ponownie. ({e})"
 
+    update_history(session, user_message, reply)
     return jsonify({'reply': reply})
 
 # === START ===
