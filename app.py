@@ -233,7 +233,7 @@ def chat():
 
     
     # === 1.5 REGUŁA LOGISTYCZNA (PRIORYTET 2) ===
-    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "maz", "partner", "przyjaciółka"]): 
+    elif any(w in text_lower for w in ["dzieckiem", "dzieci", "sama", "samemu", "zwierzak", "pies", "kot", "osoba towarzysząca", "mąż", "mężem" "maz", "partner", "przyjaciółką", "przyjaciółka"]): 
         reply = "Zależy nam na pełnym skupieniu i higienie podczas zabiegu. Prosimy o **przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Dziękujemy za zrozumienie! 😊"
         reply = add_phone_once(reply, session, count)
         update_history(session, user_message, reply)
