@@ -240,15 +240,31 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # NOWA REGUŁA: BRAMKA PRECYZUJĄCA (ODŚWIEŻENIE/KOREKTA)
-    elif re.search(r"\b(odśwież\w*|cover\s*up|poprawka\w*|dopigmentowani\w*|korekta\w*)\b", text_lower):
+    # BEZWZGLĘDNY WYMÓG: HEVIRAN/OPRYSZCZKA PRZY ZABIEGU UST
+    elif re.search(r"\b(usta\w*|opryszczka\w*|herpes\w*|heviran\w*|aciklovir\w*)\b", text_lower):
+        reply = """
+        To jest **absolutnie kluczowe** pytanie! Przed zabiegiem makijażu permanentnego ust konieczna jest profilaktyka przeciwwirusowa.
+        
+        * Prosimy o zażywanie **Heviranu** (lub innej osłony przepisanej przez lekarza) na **3 dni przed** zabiegiem oraz kontynuowanie przez **3 dni po** zabiegu.
+        * Jeśli ma Pani aktywną opryszczkę w dniu wizyty, zabieg **musi zostać przełożony**.
+        * Profilaktyka jest niezbędna, aby uniknąć nawrotu opryszczki, która może zniszczyć efekt pigmentacji.
+        
+        Dbamy o Pani zdrowie i najlepszy efekt końcowy! 💋
+        """
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+        
+    # NOWA REGUŁA: BRAMKA PRECYZUJĄCA (ODŚWIEŻENIE/KOREKTA) - ZAKTUALIZOWANA WERSJA
+    elif re.search(r"\b(odśwież\w*|poprawka\w*|dopigmentowani\w*|korekta\w*)\b", text_lower):
         reply = f"""
         Rozumiem, to bardzo ważne pytanie! Aby mogła Pani otrzymać precyzyjną informację, proszę o doprecyzowanie:
 
         1.  Czy chodzi Pani o **dopigmentowanie/korektę** po pierwszym zabiegu (wykonuje się je po 4-8 tygodniach)? (Jeśli tak, to jest **w cenie**).
         2.  Czy pyta Pani o **odświeżenie** po dłuższym czasie (np. po roku)? Wtedy musimy ustalić, **czy makijaż był wykonany w naszym salonie, czy w innym** (praca obca)?
 
-        Jeśli to praca obca, potrzebna będzie **obowiązkowa, bezpłatna konsultacja**, aby ocenić bezpieczeństwo i możliwość wykonania cover-up. Prosimy o kontakt telefoniczny: {PHONE_NUMBER} 🌿
+        Jeśli makijaż był wykonany **w innym salonie** (praca obca), konieczna jest **obowiązkowa, bezpłatna konsultacja**, aby ocenić obecny pigment. Czasem, aby uzyskać najlepszy efekt i uniknąć niechcianych kolorów, **konieczne może być wcześniejsze usunięcie starego makijażu laserem** 🌿. Dopiero po ocenie linergistki będziemy mogły zdecydować o kolejnych krokach (cover-up lub usunięcie).
+
+        Prosimy o kontakt telefoniczny w celu umówienia się na konsultację: {PHONE_NUMBER} 📞
         """
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -333,7 +349,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
