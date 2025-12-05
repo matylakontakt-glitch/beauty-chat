@@ -240,19 +240,16 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # REGUŁA: ODŚWIEŻENIE, KOREKTA, DOPIGMENTOWANIE
-    elif re.search(r"\b(odśwież\w*|cover\s*up|poprawka\w*|dopigmentowani\w*)\b", text_lower):
-        
-        # JEŻELI PYTANIE ZAWIERA SŁOWA KLUCZOWE DRUGIEGO ZABIEGU (Zawsze w cenie)
-        if re.search(r"\b(drugi|drugiego|4-8|4\s*do\s*8|korekta|dopigmentowani\w*|poprawka\w*)\b", text_lower):
-             reply = "Jeśli pyta Pani o **dopigmentowanie/korektę** (lub **poprawkę**) po pierwszym zabiegu (wykonane 4-8 tygodni później), jest ono **zawarte w cenie** i jest integralną częścią usługi. Ma ono na celu finalną stabilizację koloru. ✨"
-        
-        # JEŻELI PYTANIE ZAWIERA 'PRACA OBCA' LUB JEST OGÓLNE O ODŚWIEŻENIE PO DŁUGIM CZASIE
-        elif re.search(r"\b(inny\w*|obcy\w*)\b", text_lower):
-             reply = f"Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. praca obca), to aby bezpiecznie wykonać **odświeżenie/cover-up**, **obowiązkowa** jest bezpłatna konsultacja. Musimy ocenić stan starego pigmentu. Prosimy o kontakt telefoniczny, aby umówić spotkanie: {PHONE_NUMBER} 🌿"
-        else: # Standardowe pytanie o odświeżenie po długim czasie (Pytanie o pracę NASZĄ/OBCĄ)
-             reply = f"**Odświeżenie makijażu** (wykonywane po 1-3 latach) jest kluczowe dla zachowania koloru. Czy makijaż był wykonywany w **naszym salonie**? Jeśli tak, oferujemy specjalną cenę! Jeśli to **praca obca**, prosimy o kontakt w celu umówienia **bezpłatnej konsultacji**, aby linergistka mogła ocenić możliwość i bezpieczeństwo zabiegu: {PHONE_NUMBER} 🌸"
-        
+    # NOWA REGUŁA: BRAMKA PRECYZUJĄCA (ODŚWIEŻENIE/KOREKTA)
+    elif re.search(r"\b(odśwież\w*|cover\s*up|poprawka\w*|dopigmentowani\w*|korekta\w*)\b", text_lower):
+        reply = f"""
+        Rozumiem, to bardzo ważne pytanie! Aby mogła Pani otrzymać precyzyjną informację, proszę o doprecyzowanie:
+
+        1.  Czy chodzi Pani o **dopigmentowanie/korektę** po pierwszym zabiegu (wykonuje się je po 4-8 tygodniach)? (Jeśli tak, to jest **w cenie**).
+        2.  Czy pyta Pani o **odświeżenie** po dłuższym czasie (np. po roku)? Wtedy musimy ustalić, **czy makijaż był wykonany w naszym salonie, czy w innym** (praca obca)?
+
+        Jeśli to praca obca, potrzebna będzie **obowiązkowa, bezpłatna konsultacja**, aby ocenić bezpieczeństwo i możliwość wykonania cover-up. Prosimy o kontakt telefoniczny: {PHONE_NUMBER} 🌿
+        """
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
