@@ -22,7 +22,7 @@ DEFINICJE I FAKTY:
 - Różnica vs Tatuaż: Tatuaż jest w skórze właściwej. PMU jest półtrwały (1-3 lata, czasem do 5).
 - Bezpieczeństwo chemiczne: Pigmenty muszą spełniać normy UE REACH 2020/2081 (np. limit ołowiu 0,00007%). Używamy tylko atestowanych, bezpiecznych barwników.
 - **Korekta/Dopigmentowanie/Poprawka (Zabieg II):** Jest to zabieg uzupełniający, który wykonuje się po około 4-8 tygodniach od pierwszego zabiegu. Ma na celu wyrównanie koloru i stabilizację pigmentu po wygojeniu. Ten drugi zabieg jest integralną częścią usługi i jest **zawarty w cenie** głównego pigmentowania.
-- **Odświeżenie/Cover-up (Zabieg Pózniejszy):** Odświeżenie to zabieg wykonywany po upływie dłuższego czasu (np. 1-2 lata), aby przywrócić intensywność koloru. Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. praca obca, czyli cover-up), nie możemy go traktować jako standardowe odświeżenie. W takim przypadku, aby ocenić stan pigmentu, konieczna jest **obowiązkowa, bezpłatna konsultacja** z linergistką.
+- **Odświeżenie/Cover-up (Zabieg Pózniejszy):** Odświeżenie to zabieg wykonywany po upływie dłuższego czasu (np. 1-2 lata), aby przywrócić intensywność koloru. Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. inna linergistka, czyli cover-up), nie możemy go traktować jako standardowe odświeżenie. W takim przypadku, aby ocenić stan pigmentu, konieczna jest **obowiązkowa, bezpłatna konsultacja** z linergistką.
 
 TECHNIKI - BRWI:
 1. Microblading (Włoskowa): Manualne nacinanie skóry ("piórko"). Efekt naturalnego włosa. Mniej trwała (1-2 lata). ODRADZANA przy skórze tłustej (rozmywa się, słabo goi).
@@ -45,6 +45,8 @@ PRZECIWWSKAZANIA (BEZPIECZEŃSTWO):
   * Retinoidy/Izotek: Odstawić 6 mies. przed (ryzyko blizn).
   * Kwas hialuronowy w ustach: Odstęp 4 tyg.
   * Leki rozrzedzające krew (aspiryna): Odstawić 24h przed.
+  * **Kofeina/Kawa:** Odstawić 24h przed.
+  * **Alkohol:** Odstawić 24h przed.
 
 PROCES GOJENIA I PIELĘGNACJA (KLUCZOWE):
 - Dni 1-3 (Faza sączenia): Przemywać wacikiem z wodą (przegotowaną/destylowaną), by zmyć osocze. NIE nakładać grubej warstwy maści (gojenie "na sucho" lub minimalne).
@@ -237,6 +239,20 @@ def chat():
         
     elif any(w in text_lower for w in ["bol\w*", "ból\w*", "potrzebn\w*", "boli\w*", "czy boli\w*"]):
         reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
+
+    # NOWA REGUŁA: KAWA/ALKOHOL (Priorytet 1)
+    elif re.search(r"\b(kawa\w*|kofein\w*|espresso\w*|latte\w*|alkohol\w*|piwo\w*|wino\w*|czy mogę\s+(pić|pić|pić\s+kawę|wypiła|piłam)\w*)\b", text_lower):
+        reply = """
+        To jest **bardzo ważne** pytanie, dziękujemy za nie! Kofeina (kawa) i alkohol mają działanie rozrzedzające krew, co może utrudniać pigmentację i wpływać na gojenie.
+
+        Dlatego, aby osiągnąć najlepszy efekt:
+        * Prosimy o **odstawienie spożycia kawy, mocnej herbaty i innych napojów z kofeiną** (w tym energetycznych) na **minimum 24 godziny** przed zabiegiem.
+        * Prosimy o **odstawienie spożycia alkoholu** na **minimum 24 godziny** przed zabiegiem.
+        
+        Przestrzeganie tej zasady minimalizuje ryzyko krwawienia i zapewnia, że pigment zostanie przyjęty przez skórę w idealny sposób. 🌿
+        """
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
