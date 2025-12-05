@@ -22,31 +22,29 @@ DEFINICJE I FAKTY:
 - Różnica vs Tatuaż: Tatuaż jest w skórze właściwej. PMU jest półtrwały (1-3 lata, czasem do 5).
 - Bezpieczeństwo chemiczne: Pigmenty muszą spełniać normy UE REACH 2020/2081 (np. limit ołowiu 0,00007%). Używamy tylko atestowanych, bezpiecznych barwników.
 - **Korekta/Dopigmentowanie/Poprawka (Zabieg II):** Jest to zabieg uzupełniający, który wykonuje się po około 4-8 tygodniach od pierwszego zabiegu. Ma na celu wyrównanie koloru i stabilizację pigmentu po wygojeniu. Ten drugi zabieg jest integralną częścią usługi i jest **zawarty w cenie** głównego pigmentowania.
-- **Odświeżenie/Cover-up (Zabieg Pózniejszy):** Odświeżenie to zabieg wykonywany po upływie dłuższego czasu (np. 1-2 lata), aby przywrócić intensywność koloru. Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. inna linergistka, czyli cover-up), nie możemy go traktować jako standardowe odświeżenie. W takim przypadku, aby ocenić stan pigmentu, konieczna jest **obowiązkowa, bezpłatna konsultacja** z linergistką.
+- **Odświeżenie/Cover-up (Zabieg Pózniejszy):** Odświeżenie to zabieg wykonywane po upływie dłuższego czasu (np. 1-2 lata), aby przywrócić intensywność koloru. Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. inna linergistka, czyli cover-up), nie możemy go traktować jako standardowe odświeżenie. W takim przypadku, aby ocenić stan pigmentu, konieczna jest **obowiązkowa, bezpłatna konsultacja** z linergistką.
 
 TECHNIKI - BRWI:
-1. Microblading (Włoskowa): Manualne nacinanie skóry ("piórko"). Efekt naturalnego włosa. Mniej trwała (1-2 lata). ODRADZANA przy skórze tłustej (rozmywa się, słabo goi).
-2. Pudrowa (Powder Brows): Maszynowe cieniowanie, efekt "przyprószenia". Bardziej trwała (2-3 lata), idealna dla każdego typu skóry (także tłustej).
-3. Ombre Brows: Gradient – jaśniejsza nasada, ciemniejszy koniec i dół.
-4. Hybrydowa (Combo): Włoski na początku łuku + cień na reszcie.
-5. Metoda Wypełnienia (Insta): Mocny, graficzny efekt (niemodne, nienaturalne).
+1. Pudrowa (Powder Brows): Maszynowe cieniowanie, efekt "przyprószenia". Bardziej trwała (2-3 lata), idealna dla każdego typu skóry (także tłustej).
+2. Ombre Brows: Gradient – jaśniejsza nasada, ciemniejszy koniec i dół.
+3. Hybrydowa (Combo): Włoski na początku łuku + cień na reszcie.
 
 TECHNIKI - USTA:
 - Lip Blush: Akwarelowe, delikatne uwydatnienie czerwieni.
 - Full Lip Color: Efekt szminki.
 - Wymagana osłona przeciwwirusowa (Heviran) 3 dni przed i 3 dni po zabiegu (profilaktyka opryszczki).
 
-**UWAGA: W naszym salonie nie wykonujemy makijażu permanentnego powiek (eyeliner/zagęszczenie linii rzęs) oraz metody Nano Brows. Skupiamy się wyłącznie na brwiach i ustach, w sprawdzonych i najmodniejszych technikach.**
+**UWAGA: W naszym salonie nie wykonujemy makijażu permanentnego powiek (eyeliner/zagęszczenie linii rzęs), Microbladingu oraz metody Nano Brows. Skupiamy się wyłącznie na brwiach i ustach, w sprawdzonych i najmodniejszych technikach.**
 
 PRZECIWWSKAZANIA (BEZPIECZEŃSTWO):
-- Bezwzględne: Ciąża, laktacja, nowotwory (bez zgody lekarza), aktywne infekcje, łuszczyca w miejscu zabiegu.
+- Bezwzględne: Ciąża, laktacja, nowotwory (bez zgody lekarza), **aktywna opryszczka**, **inne infekcje wirusowe** (np. przeziębienie, grypa), **mocna/świeża opalenizna**, łuszczyca w miejscu zabiegu.
 - Czasowe (Karencja):
   * Odżywki do rzęs: Odstawić 3-6 mies. przed zabiegiem (jeśli planowany zabieg na oczy, ale my go nie wykonujemy).
   * Retinoidy/Izotek: Odstawić 6 mies. przed (ryzyko blizn).
   * Kwas hialuronowy w ustach: Odstęp 4 tyg.
   * Leki rozrzedzające krew (aspiryna): Odstawić 24h przed.
-  * **Kofeina/Kawa:** Odstawić 24h przed.
-  * **Alkohol:** Odstawić 24h przed.
+  * Kofeina/Kawa: Odstawić 24h przed.
+  * Alkohol: Odstawić 24h przed.
 
 PROCES GOJENIA I PIELĘGNACJA (KLUCZOWE):
 - Dni 1-3 (Faza sączenia): Przemywać wacikiem z wodą (przegotowaną/destylowaną), by zmyć osocze. NIE nakładać grubej warstwy maści (gojenie "na sucho" lub minimalne).
@@ -64,8 +62,11 @@ PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymet
 
 ---
 **CENNIK (do użycia w Fallbacku GPT):**
-- Makijaż permanentny brwi: 1200 zł (dopigmentowanie/korekta w cenie ✨)
-- Makijaż permanentny ust: 1200 zł (dopigmentowanie/korekta w cenie 💋)
+- Brwi Powder Brows (Pudrowe): 1200 zł (dopigmentowanie/korekta w cenie ✨)
+- Brwi Ombre Brows: 1200 zł (dopigmentowanie/korekta w cenie ✨)
+- Brwi Hybrydowe (Combo): 1400 zł (dopigmentowanie/korekta w cenie ✨)
+- Usta Lip Blush: 1000 zł (dopigmentowanie/korekta w cenie 💋)
+- Usta Full Lip Color: 1200 zł (dopigmentowanie/korekta w cenie 💋)
 - Laserowe usuwanie PMU brwi: 350 zł za jeden obszar 🌿
 """
 
@@ -78,9 +79,12 @@ client = OpenAI(api_key=api_key)
 
 # === CENNIK ===
 PRICE_LIST = {
-    "brwi": "Makijaż permanentny brwi kosztuje 1200 zł — dopigmentowanie/korekta jest w cenie ✨",
-    "usta": "Makijaż permanentny ust kosztuje 1200 zł — dopigmentowanie/korekta jest w cenie 💋",
-    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar 350 zł 🌿"
+    "brwi_pudrowe": "Makijaż permanentny brwi (Powder Brows): **1200 zł** — dopigmentowanie/korekta w cenie ✨",
+    "brwi_ombre": "Makijaż permanentny brwi (Ombre Brows): **1200 zł** — dopigmentowanie/korekta w cenie ✨",
+    "brwi_combo": "Makijaż permanentny brwi (Hybryda/Combo): **1400 zł** — dopigmentowanie/korekta w cenie ✨",
+    "usta_blush": "Makijaż permanentny ust (Lip Blush): **1000 zł** — dopigmentowanie/korekta w cenie 💋",
+    "usta_full": "Makijaż permanentny ust (Full Lip Color): **1200 zł** — dopigmentowanie/korekta w cenie 💋",
+    "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar **350 zł** 🌿"
 }
 # === KONFIGURACJA TELEFONU ===
 PHONE_NUMBER = "881 622 882"
@@ -94,7 +98,8 @@ INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąża\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
         r"\bkaw\w*", r"\bpi\w+\s+kaw\w*", r"\bespresso\w*", r"\blatte\w*", r"\bkofein\w*",
-        r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*"
+        r"\balkohol\w*", r"\bwino\w*", r"\bpiwo\w*", r"\bizotek\w*", r"\bretinoid\w*", r"\bsteroid\w*", r"\bheviran\w*", r"\bhormon\w*",
+        r"\bopryszczk\w*", r"\bopalenizn\w*", r"\binfekcj\w*", r"\bwirus\w*"
     ],
     "pielęgnacja": [
         r"\bpielęgnac\w*", r"\bgojenie\w*", r"\bpo\s+zabiegu\w*", r"\bstrup\w*", r"\błuszcz\w*", r"\bzłuszcz\w*",
@@ -102,7 +107,7 @@ INTENT_KEYWORDS = {
     ],
     "techniki_brwi": [
         r"\bbrwi\w*", r"\bpowder\w*", r"\bpudrow\w*", r"\bombre\w*", r"\bmetoda\s+pudrowa\w*", r"\bmetoda\s+ombre\w*",
-        r"\bmetody\s+brwi\w*", r"\bpigmentacj\w+\s+brwi\w*"
+        r"\bmetody\s+brwi\w*", r"\bpigmentacj\w+\s+brwi\w*", r"\bhybrydow\w*", r"\bcombo\w*"
     ],
     "techniki_usta": [
         r"\busta\w*", r"\bust\w*", r"\bwargi\w*", r"\blip\w*", r"\bblush\w*", r"\bkontur\w*", r"\bliner\w*", r"\bfull\s+lip\w*", r"\baquarelle\w*"
@@ -231,9 +236,9 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # REGUŁA: Oczy / Nano Brows (Tego nie robimy)
-    elif any(w in text_lower for w in ["oczy\w*", "powieki\w*", "eyeliner\w*", "zagęszczen\w*"]) or "nano brows" in text_lower:
-        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach** w sprawdzonych technikach. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs) oraz metody Nano Brows**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
+    # REGUŁA: Oczy / Nano Brows / Microblading / Wypełnienie (Tego nie robimy)
+    elif any(w in text_lower for w in ["oczy\w*", "powieki\w*", "eyeliner\w*", "zagęszczen\w*", "microblading\w*", "włoskow\w*", "wypełnieni\w*", "insta\w*"]) or "nano brows" in text_lower:
+        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach** w sprawdzonych i najmodniejszych technikach (Pudrowa, Ombre, Hybrydowa, Lip Blush, Full Lip Color). **Nie wykonujemy Microbladingu, Metody Wypełnienia (Insta) oraz makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
@@ -242,21 +247,23 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # NOWA REGUŁA: KAWA/ALKOHOL (Priorytet 1)
-    elif re.search(r"\b(kawa\w*|kofein\w*|espresso\w*|latte\w*|alkohol\w*|piwo\w*|wino\w*|czy mogę\s+(pić|pić|pić\s+kawę|wypiła|piłam)\w*)\b", text_lower):
-        reply = """
-        To jest **bardzo ważne** pytanie, dziękujemy za nie! Kofeina (kawa) i alkohol mają działanie rozrzedzające krew, co może utrudniać pigmentację i wpływać na gojenie.
+    # NOWA REGUŁA: KAWA/ALKOHOL/OPALENIZNA/INFEKCJE (Priorytet 1)
+    elif re.search(r"\b(kawa\w*|kofein\w*|alkohol\w*|opryszczk\w*|opalenizn\w*|infekcj\w*|wirus\w*)\b", text_lower):
+        
+        przeciwwskazania = []
+        if re.search(r"\b(kawa\w*|kofein\w*|alkohol\w*)\b", text_lower):
+            przeciwwskazania.append("Kawa/Kofeina/Alkohol: Prosimy o **odstawienie na 24 godziny** przed zabiegiem, ponieważ rozrzedzają krew.")
+        if re.search(r"\b(opryszczk\w*|infekcj\w*|wirus\w*)\b", text_lower):
+            przeciwwskazania.append("Aktywna opryszczka/Infekcje: Zabieg **musi zostać przełożony**. Jeśli planuje Pani makijaż ust, konieczna jest też profilaktyka **Heviranem** (3 dni przed i 3 dni po).")
+        if re.search(r"\b(opalenizn\w*|świeża\s+opalenizna\w*)\b", text_lower):
+            przeciwwskazania.append("Mocna/Świeża opalenizna: Prosimy o unikanie intensywnego słońca w miejscu zabiegu. Skóra musi być **nieopalona i wygojona**.")
 
-        Dlatego, aby osiągnąć najlepszy efekt:
-        * Prosimy o **odstawienie spożycia kawy, mocnej herbaty i innych napojów z kofeiną** (w tym energetycznych) na **minimum 24 godziny** przed zabiegiem.
-        * Prosimy o **odstawienie spożycia alkoholu** na **minimum 24 godziny** przed zabiegiem.
-        
-        Przestrzeganie tej zasady minimalizuje ryzyko krwawienia i zapewnia, że pigment zostanie przyjęty przez skórę w idealny sposób. 🌿
-        """
-        update_history(session, user_message, reply)
-        return jsonify({'reply': reply})
-        
-    # BEZWZGLĘDNY WYMÓG: HEVIRAN/OPRYSZCZKA PRZY ZABIEGU UST
+        if przeciwwskazania:
+            reply = "To bardzo ważne dla Pani bezpieczeństwa i najlepszego efektu końcowego! Oto najważniejsze zasady dotyczące tych kwestii:\n\n* " + "\n* ".join(przeciwwskazania) + "\n\nJeśli ma Pani wątpliwości, zawsze najlepiej skontaktować się z nami telefonicznie: " + PHONE_NUMBER + " 🌿"
+            update_history(session, user_message, reply)
+            return jsonify({'reply': reply})
+
+    # BEZWZGLĘDNY WYMÓG: HEVIRAN/OPRYSZCZKA PRZY ZABIEGU UST (Reguła pozostawiona dla bezpieczeństwa)
     elif re.search(r"\b(usta\w*|opryszczka\w*|herpes\w*|heviran\w*|aciklovir\w*)\b", text_lower):
         reply = """
         To jest **absolutnie kluczowe** pytanie! Przed zabiegiem makijażu permanentnego ust konieczna jest profilaktyka przeciwwirusowa.
@@ -365,7 +372,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
