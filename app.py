@@ -15,13 +15,14 @@ DANE SALONU:
 - Kontakt: 881 622 882
 - Zespół: W naszym salonie zabiegi wykonuje certyfikowany i zgrany **zespół linergistek** z wieloletnim doświadczeniem. Każda z nich specjalizuje się w różnych aspektach makijażu permanentnego, co gwarantuje najwyższą jakość i dobór idealnej techniki. Aby potwierdzić personalia eksperta, który będzie Cię przyjmował, prosimy o kontakt telefoniczny z recepcją.
 - Czas trwania zabiegu: Około 2-3 godzin (w zależności od obszaru i techniki).
-- **Parking:** Klienci nie muszą się martwić o miejsce. Salon posiada **własny parking**, zapewniający bezproblemowe miejsca postojowe tuż przy wejściu 🚗.
+- Parking: Klienci nie muszą się martwić o miejsce. Salon posiada **własny parking**, zapewniający bezproblemowe miejsca postojowe tuż przy wejściu 🚗.
 
 DEFINICJE I FAKTY:
 - Makijaż permanentny (PMU/mikropigmentacja): Wprowadzenie pigmentu płytko do naskórka lub granicy naskórkowo-skórnej.
 - Różnica vs Tatuaż: Tatuaż jest w skórze właściwej. PMU jest półtrwały (1-3 lata, czasem do 5).
 - Bezpieczeństwo chemiczne: Pigmenty muszą spełniać normy UE REACH 2020/2081 (np. limit ołowiu 0,00007%). Używamy tylko atestowanych, bezpiecznych barwników.
-- **Korekta/Dopigmentowanie:** Jest to zabieg uzupełniający, który wykonuje się po około 4-8 tygodniach od pierwszego zabiegu. Ma on na celu wyrównanie koloru po wygojeniu i stabilizację pigmentu. Korekta jest traktowana jako integralna część zabiegu i jest **zawarta w cenie** głównego pigmentowania.
+- **Korekta/Dopigmentowanie/Poprawka (Zabieg II):** Jest to zabieg uzupełniający, który wykonuje się po około 4-8 tygodniach od pierwszego zabiegu. Ma na celu wyrównanie koloru i stabilizację pigmentu po wygojeniu. Ten drugi zabieg jest integralną częścią usługi i jest **zawarty w cenie** głównego pigmentowania.
+- **Odświeżenie/Cover-up (Zabieg Pózniejszy):** Odświeżenie to zabieg wykonywany po upływie dłuższego czasu (np. 1-2 lata), aby przywrócić intensywność koloru. Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. praca obca, czyli cover-up), nie możemy go traktować jako standardowe odświeżenie. W takim przypadku, aby ocenić stan pigmentu, konieczna jest **obowiązkowa, bezpłatna konsultacja** z linergistką.
 
 TECHNIKI - BRWI:
 1. Microblading (Włoskowa): Manualne nacinanie skóry ("piórko"). Efekt naturalnego włosa. Mniej trwała (1-2 lata). ODRADZANA przy skórze tłustej (rozmywa się, słabo goi).
@@ -212,7 +213,7 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # ZAKTUALIZOWANA REGUŁA ADRESU I PARKINGU
+    # REGUŁA ADRESU I PARKINGU
     elif any(w in text_lower for w in ["gdzie\w*", "adres\w*", "lokalizacj\w*", "dojazd\w*", "parking\w*", "gdzie parkowac\w*"]):
         reply = "Nasz salon znajduje się pod adresem: **ul. Junikowska 9** 🌸. Zapraszamy od poniedziałku do piątku w godzinach 09:00 - 19:00. Nie musi się Pani martwić o parking! Posiadamy **własne miejsca postojowe** tuż przy salonie 🚗."
         update_history(session, user_message, reply)
@@ -228,8 +229,8 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
+    # REGUŁA: Oczy / Nano Brows (Tego nie robimy)
     elif any(w in text_lower for w in ["oczy\w*", "powieki\w*", "eyeliner\w*", "zagęszczen\w*"]) or "nano brows" in text_lower:
-        # Zaktualizowana reguła, która teraz obejmuje Nano Brows
         reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach** w sprawdzonych technikach. **Nie wykonujemy makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs) oraz metody Nano Brows**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
@@ -238,7 +239,24 @@ def chat():
         reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
+        
+    # REGUŁA: ODŚWIEŻENIE, KOREKTA, DOPIGMENTOWANIE
+    elif re.search(r"\b(odśwież\w*|cover\s*up|poprawka\w*|dopigmentowani\w*)\b", text_lower):
+        
+        # JEŻELI PYTANIE ZAWIERA SŁOWA KLUCZOWE DRUGIEGO ZABIEGU (Zawsze w cenie)
+        if re.search(r"\b(drugi|drugiego|4-8|4\s*do\s*8|korekta|dopigmentowani\w*|poprawka\w*)\b", text_lower):
+             reply = "Jeśli pyta Pani o **dopigmentowanie/korektę** (lub **poprawkę**) po pierwszym zabiegu (wykonane 4-8 tygodni później), jest ono **zawarte w cenie** i jest integralną częścią usługi. Ma ono na celu finalną stabilizację koloru. ✨"
+        
+        # JEŻELI PYTANIE ZAWIERA 'PRACA OBCA' LUB JEST OGÓLNE O ODŚWIEŻENIE PO DŁUGIM CZASIE
+        elif re.search(r"\b(inny\w*|obcy\w*)\b", text_lower):
+             reply = f"Jeśli makijaż permanentny był wykonany w **innym salonie** (tzw. praca obca), to aby bezpiecznie wykonać **odświeżenie/cover-up**, **obowiązkowa** jest bezpłatna konsultacja. Musimy ocenić stan starego pigmentu. Prosimy o kontakt telefoniczny, aby umówić spotkanie: {PHONE_NUMBER} 🌿"
+        else: # Standardowe pytanie o odświeżenie po długim czasie (Pytanie o pracę NASZĄ/OBCĄ)
+             reply = f"**Odświeżenie makijażu** (wykonywane po 1-3 latach) jest kluczowe dla zachowania koloru. Czy makijaż był wykonywany w **naszym salonie**? Jeśli tak, oferujemy specjalną cenę! Jeśli to **praca obca**, prosimy o kontakt w celu umówienia **bezpłatnej konsultacji**, aby linergistka mogła ocenić możliwość i bezpieczeństwo zabiegu: {PHONE_NUMBER} 🌸"
+        
+        update_history(session, user_message, reply)
+        return jsonify({'reply': reply})
 
+    # REGUŁA: OSOBY TOWARZYSZĄCE
     elif re.search(
         r"\b("
         r"m[aą]ż\w*|m[eę]żem\w*|maz\w*|z\s+m[eę]żem\w*|"
