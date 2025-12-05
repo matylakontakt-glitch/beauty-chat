@@ -260,9 +260,9 @@ def chat():
         Rozumiem, to bardzo ważne pytanie! Aby mogła Pani otrzymać precyzyjną informację, proszę o doprecyzowanie:
 
         1.  Czy chodzi Pani o **dopigmentowanie/korektę** po pierwszym zabiegu (wykonuje się je po 4-8 tygodniach)? (Jeśli tak, to jest **w cenie**).
-        2.  Czy pyta Pani o **odświeżenie** po dłuższym czasie (np. po roku)? Wtedy musimy ustalić, **czy makijaż był wykonany w naszym salonie, czy w innym** (praca obca)?
+        2.  Czy pyta Pani o **odświeżenie** po dłuższym czasie (np. po roku)? Wtedy musimy ustalić, **czy makijaż był wykonany w naszym salonie, czy w innym** (inna linergistka)?
 
-        Jeśli makijaż był wykonany **w innym salonie** (praca obca), konieczna jest **obowiązkowa, bezpłatna konsultacja**, aby ocenić obecny pigment. Czasem, aby uzyskać najlepszy efekt i uniknąć niechcianych kolorów, **konieczne może być wcześniejsze usunięcie starego makijażu laserem** 🌿. Dopiero po ocenie linergistki będziemy mogły zdecydować o kolejnych krokach (cover-up lub usunięcie).
+        Jeśli makijaż był wykonany **w innym salonie** (praca innej linergistki), konieczna jest **obowiązkowa, bezpłatna konsultacja**, aby ocenić obecny pigment. Czasem, aby uzyskać najlepszy efekt i uniknąć niechcianych kolorów, **konieczne może być wcześniejsze usunięcie starego makijażu laserem** 🌿. Dopiero po ocenie linergistki będziemy mogły zdecydować o kolejnych krokach (cover-up lub usunięcie).
 
         Prosimy o kontakt telefoniczny w celu umówienia się na konsultację: {PHONE_NUMBER} 📞
         """
