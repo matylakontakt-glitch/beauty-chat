@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template # ZMIENIONY IMPORT: render_template zamiast send_from_directory
 from dotenv import load_dotenv
 from openai import OpenAI
 import os, random, re
@@ -163,10 +163,11 @@ def update_history(session, user_msg, bot_reply):
     if len(session["history"]) > HISTORY_LIMIT:
         session["history"].popleft()
 
-# === STRONA GŁÓWNA, POWITANIE (bez zmian) ===
+# === STRONA GŁÓWNA, POWITANIE (NOWA WERSJA) ===
 @app.route('/')
 def serve_index():
-    return send_from_directory('.', 'index.html')
+    # Flask szuka index.html w folderze 'templates'
+    return render_template('index.html') 
 
 @app.route('/start', methods=['GET'])
 def start_message():
