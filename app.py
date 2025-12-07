@@ -4,8 +4,7 @@ from openai import OpenAI
 import os, random, re
 from collections import deque
 
-# === DANE SALONU I WIEDZA (PRZENIESIONE Z knowledgeBase.ts) ===
-# TA WIEDZA JEST PRZEKAZYWANA DO GPT W FALLBACKU!
+# === DANE SALONU I WIEDZA (PRZEKAZYWANA DO GPT W FALLBACKU) ===
 PMU_FULL_KNOWLEDGE = """
 Jesteś **ekspertką/ekspertem salonu** z 20-letnim doświadczeniem w mikropigmentacji. Wypowiadasz się w imieniu salonu, używając formy "nasz salon," "eksperci robią," "możemy doradzić."
 
@@ -70,20 +69,22 @@ PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymet
 - Laserowe usuwanie PMU brwi: 350 zł za jeden obszar 🌿
 """
 
-# === INICJALIZACJA ===
+# === INICJALIZACJA FLASK: KLUCZOWA ZMIANA TUTAJ ===
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-# 🟢 KLUCZOWA POPRAWKA (Zgodnie z prośbą): DEFINICJA ŚCIEŻEK BEZWZGLĘDNYCH
+# 🟢 ROZWIĄZANIE PROBLEMU TemplateNotFound:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(
     __name__, 
-    template_folder=os.path.join(BASE_DIR, 'templates'), 
+    # Ustawiamy template_folder na katalog, w którym jest app.py (BASE_DIR), gdzie leży index.html
+    template_folder=BASE_DIR, 
+    # Folder static pozostaje podkatalogiem, co jest poprawne
     static_folder=os.path.join(BASE_DIR, 'static')
 )
 client = OpenAI(api_key=api_key)
 
-# === CENNIK ===
+# === KONFIGURACJA DANYCH STAŁYCH ===
 PRICE_LIST = {
     "brwi_pudrowe": "Makijaż permanentny brwi (Powder Brows): **1200 zł** — dopigmentowanie/korekta w cenie ✨",
     "brwi_ombre": "Makijaż permanentny brwi (Ombre Brows): **1200 zł** — dopigmentowanie/korekta w cenie ✨",
@@ -92,14 +93,7 @@ PRICE_LIST = {
     "usta_full": "Makijaż permanentny ust (Full Lip Color): **1200 zł** — dopigmentowanie/korekta w cenie 💋",
     "laser": "Laserowe usuwanie makijażu permanentnego brwi — jeden obszar **350 zł** 🌿"
 }
-# === KONFIGURACJA TELEFONU ===
 PHONE_NUMBER = "881 622 882"
-PHONE_MESSAGES = [
-    f"\n\nJeśli wolisz porozmawiać o szczegółach, zadzwoń do nas: {PHONE_NUMBER} 📞",
-    f"\n\nChętnie odpowiemy na bardziej złożone pytania telefonicznie! {PHONE_NUMBER} 🌿",
-    f"\n\nMasz ochotę na konsultację lub rezerwację terminu? Jesteśmy pod numerem: {PHONE_NUMBER} 🌸"
-]
-# === BAZA WIEDZY (Tylko po to, by INTENCJE mogły być wykryte) ===
 INTENT_KEYWORDS = {
     "przeciwwskazania": [
         r"\bprzeciwwskaz\w*", r"\bchorob\w*", r"\blek\w*", r"\btablet\w*", r"\bciąża\w*", r"\bw\s+ciąży\b", r"\bw\s+ciazy\b",
@@ -133,7 +127,7 @@ INTENT_PRIORITIES = [
 HISTORY_LIMIT = 10
 SESSION_DATA = {}
 
-# === POMOCNICZE FUNKCJE (bez zmian) ===
+# === POMOCNICZE FUNKCJE ===
 def detect_intent(text):
     scores = {}
     for intent, patterns in INTENT_KEYWORDS.items():
@@ -148,17 +142,6 @@ def detect_intent(text):
                 if p in tied:
                     return p
     return best_intent
-
-def emojis_for(intent):
-    mapping = {
-        "przeciwwskazania": ["🌿", "💋"],
-        "pielęgnacja": ["🌿", "✨"],
-        "techniki_brwi": ["✨", "🌸"],
-        "techniki_usta": ["💋", "💄"],
-        "trwalosc": ["💄", "✨"],
-        "fakty_mity": ["🌸", "✨"]
-    }
-    return " ".join(random.sample(mapping.get(intent, ["✨", "🌸"]), 2))
     
 def update_history(session, user_msg, bot_reply):
     session["history"].append(("user", user_msg))
@@ -169,11 +152,10 @@ def update_history(session, user_msg, bot_reply):
     if len(session["history"]) > HISTORY_LIMIT:
         session["history"].popleft()
 
-# === STRONA GŁÓWNA, POWITANIE (NOWA WERSJA) ===
+# === STRONA GŁÓWNA, POWITANIE ===
 @app.route('/')
 def serve_index():
-    # Zamiast send_from_directory używamy render_template. 
-    # Dzięki konfiguracji Flask zna ścieżki do folderów.
+    # Dzięki nowej konfiguracji, Flask szuka 'index.html' w BASE_DIR (katalog główny)
     return render_template('index.html') 
 
 @app.route('/start', methods=['GET'])
@@ -201,7 +183,6 @@ def chat():
 
     if not user_message:
         reply = 'Napisz coś, żebym mogła pomóc 💬'
-        # użycie 'session' przed deklaracją - lepiej obsłużyć
         if user_ip in SESSION_DATA:
             update_history(SESSION_DATA[user_ip], user_message, reply)
         return jsonify({'reply': reply})
@@ -218,13 +199,14 @@ def chat():
     
     # === 1. OBSŁUGA CEN, CZASU I REGUŁY KRYTYCZNE (PRIORYTET 1) ===
 
-    # ** REGUŁA CENOWA (PRIORYTET 1) **
+    # ** REGUŁA CENOWA **
     if any(word in text_lower for word in ["ile\w*", "koszt\w*", "kosztuje\w*", "cena\w*", "za ile\w*", "cennik\w*"]):
         all_prices = "\n\n".join(PRICE_LIST.values())
         reply = "Oto nasz aktualny cennik:\n\n" + all_prices
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
+    # ** REGUŁA CZASU GOJENIA **
     elif any(w in text_lower for w in ["ile go\w*", "jak dlugo sie go\w*", "czas gojeni\w*", "gojenie trwa\w*", "goi się\w*"]):
         reply = "Pełny proces gojenia dzieli się na etapy: **Faza Sączenia** (Dni 1-3) oraz **Łuszczenie się naskórka** (Dni 4-10, pojawiają się mikrostrupki, których nie wolno zdrapywać!). Pełna **stabilizacja koloru** następuje po około **28 dniach** (cykl odnowy naskórka). ✨"
         update_history(session, user_message, reply)
@@ -236,28 +218,31 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
+    # REGUŁA: CZAS TRWANIA ZABIEGU
     elif any(w in text_lower for w in ["ile trwa\w*", "jak długo\w*", "czas\w*", "długo\w*"]) and not any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
         reply = "Sam zabieg makijażu permanentnego trwa zazwyczaj **około 2 do 3 godzin**. Ten czas obejmuje szczegółową konsultację, rysunek wstępny (najważniejszy etap!) oraz samą pigmentację. Prosimy, aby zarezerwowała Pani sobie na wizytę właśnie tyle czasu. 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
+    # REGUŁA: CZAS TRWANIA KONSULTACJI
     elif any(w in text_lower for w in ["ile trwa\w*", "jak długo\w*", "czas\w*", "długo\w*"]) and any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
         reply = "Bezpłatna konsultacja trwa **około 1 godziny**. Jest to czas przeznaczony na omówienie szczegółów, wybór metody, kolorów i odpowiedzi na Pani wszystkie pytania. 🌿"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # REGUŁA: Oczy / Nano Brows / Microblading / Wypełnienie (Tego nie robimy)
+    # REGUŁA: CZEGO NIE ROBIMY
     elif any(w in text_lower for w in ["oczy\w*", "powieki\w*", "eyeliner\w*", "zagęszczen\w*", "microblading\w*", "włoskow\w*", "wypełnieni\w*", "insta\w*"]) or "nano brows" in text_lower:
-        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach** w sprawdzonych i najmodniejszych technikach (Pudrowa, Ombre, Hybrydowa, Lip Blush, Full Lip Color). **Nie wykonujemy Microbladingu, Metody Wypełnienia (Insta) oraz makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
+        reply = f"W naszym salonie skupiamy się wyłącznie na **brwiach i ustach** w sprawdzonych i najmodniejszych technikach. **Nie wykonujemy Microbladingu, Metody Wypełnienia (Insta) oraz makijażu permanentnego powiek (eyeliner, zagęszczanie rzęs)**. Jeśli interesuje Pani rezerwacja na brwi lub usta, prosimy o kontakt telefoniczny: {PHONE_NUMBER} 💋."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
+    # REGUŁA: BÓL
     elif any(w in text_lower for w in ["bol\w*", "ból\w*", "potrzebn\w*", "boli\w*", "czy boli\w*"]):
         reply = "Ból jest minimalny, ponieważ stosujemy **znieczulenie lidokainą**. PMU jest półtrwałe, więc potrwa tylko chwilę. W naszym salonie dążymy do maksymalnego komfortu dla każdej klientki podczas zabiegu. ✨"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # NOWA REGUŁA: KAWA/ALKOHOL/OPALENIZNA/INFEKCJE (Priorytet 1)
+    # REGUŁA: KAWA/ALKOHOL/OPALENIZNA/INFEKCJE
     elif re.search(r"\b(kawa\w*|kofein\w*|alkohol\w*|opryszczk\w*|opalenizn\w*|infekcj\w*|wirus\w*)\b", text_lower):
         
         przeciwwskazania = []
@@ -273,21 +258,20 @@ def chat():
             update_history(session, user_message, reply)
             return jsonify({'reply': reply})
 
-    # BEZWZGLĘDNY WYMÓG: HEVIRAN/OPRYSZCZKA PRZY ZABIEGU UST (Reguła pozostawiona dla bezpieczeństwa)
+    # REGUŁA: BEZWZGLĘDNY WYMÓG HEVIRANU PRZY ZABIEGU UST
     elif re.search(r"\b(usta\w*|opryszczka\w*|herpes\w*|heviran\w*|aciklovir\w*)\b", text_lower):
         reply = """
         To jest **absolutnie kluczowe** pytanie! Przed zabiegiem makijażu permanentnego ust konieczna jest profilaktyka przeciwwirusowa.
         
         * Prosimy o zażywanie **Heviranu** (lub innej osłony przepisanej przez lekarza) na **3 dni przed** zabiegiem oraz kontynuowanie przez **3 dni po** zabiegu.
         * Jeśli ma Pani aktywną opryszczkę w dniu wizyty, zabieg **musi zostać przełożony**.
-        * Profilaktyka jest niezbędna, aby uniknąć nawrotu opryszczki, która może zniszczyć efekt pigmentacji.
         
         Dbamy o Pani zdrowie i najlepszy efekt końcowy! 💋
         """
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # NOWA REGUŁA: BRAMKA PRECYZUJĄCA (ODŚWIEŻENIE/KOREKTA) - ZAKTUALIZOWANA WERSJA
+    # REGUŁA: BRAMKA PRECYZUJĄCA (ODŚWIEŻENIE/KOREKTA)
     elif re.search(r"\b(odśwież\w*|poprawka\w*|dopigmentowani\w*|korekta\w*)\b", text_lower):
         reply = f"""
         Rozumiem, to bardzo ważne pytanie! Aby mogła Pani otrzymać precyzyjną informację, proszę o doprecyzowanie:
@@ -295,44 +279,33 @@ def chat():
         1.  Czy chodzi Pani o **dopigmentowanie/korektę** po pierwszym zabiegu (wykonuje się je po 4-8 tygodniach)? (Jeśli tak, to jest **w cenie**).
         2.  Czy pyta Pani o **odświeżenie** po dłuższym czasie (np. po roku)? Wtedy musimy ustalić, **czy makijaż był wykonany w naszym salonie, czy w innym** (inna linergistka)?
 
-        Jeśli makijaż był wykonany **w innym salonie** (praca innej linergistki), konieczna jest **obowiązkowa, bezpłatna konsultacja**, aby ocenić obecny pigment. Czasem, aby uzyskać najlepszy efekt i uniknąć niechcianych kolorów, **konieczne może być wcześniejsze usunięcie starego makijażu laserem** 🌿. Dopiero po ocenie linergistki będziemy mogły zdecydować o kolejnych krokach (cover-up lub usunięcie).
-
-        Prosimy o kontakt telefoniczny w celu umówienia się na konsultację: {PHONE_NUMBER} 📞
+        Jeśli makijaż był wykonany **w innym salonie**, konieczna jest **obowiązkowa, bezpłatna konsultacja**, aby ocenić obecny pigment. Czasem **konieczne może być wcześniejsze usunięcie starego makijażu laserem** 🌿. Prosimy o kontakt telefoniczny w celu umówienia się na konsultację: {PHONE_NUMBER} 📞
         """
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
     # REGUŁA: OSOBY TOWARZYSZĄCE
     elif re.search(
-        r"\b("
-        r"m[aą]ż\w*|m[eę]żem\w*|maz\w*|z\s+m[eę]żem\w*|"
-        r"partner\w*|"
-        r"przyjaci[oó]łk\w*|koleżank\w*|"
-        r"dzieck\w*|dzieci\w*|"
-        r"z\s+dzieckiem\w*|z\s+dzieci\w*|"
-        r"zwierzak\w*|pies\w*|kot\w*|"
-        r"osob\w*\s+towarzysz\w*|towarzysz\w*|"
-        r"razem\w*|sam\w*|mog[eę]\s+przyj\w*"
-        r")\b",
+        r"\b(m[aą]ż\w*|partner\w*|przyjaci[oó]łk\w*|koleżank\w*|dzieck\w*|zwierzak\w*|osob\w*\s+towarzysz\w*|razem\w*)\b",
         text_lower
     ):
-        reply = "Zależy nam na pełnym skupieniu, sterylności i higienie podczas zabiegu. Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci), oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
+        reply = "Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: UMÓWIENIE KONSULTACJI ===
+    # REGUŁA: UMÓWIENIE KONSULTACJI
     elif any(w in text_lower for w in ["umówić\w*", "termin\w*", "zapis\w*", "woln\w*", "rezerwacj\w*"]) and any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
         reply = f"Chętnie umówimy Panią na **bezpłatną konsultację**! Prosimy o kontakt telefoniczny z recepcją: {PHONE_NUMBER}, aby znaleźć dogodny dla Pani termin spotkania. Zarezerwuje Pani około 1 godziny 🌿."
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: UMÓWIENIE ZABIEGU ===
+    # REGUŁA: UMÓWIENIE ZABIEGU
     elif any(w in text_lower for w in ["termin\w*", "umówić\w*", "zapis\w*", "woln\w*", "rezerwacj\w*", "zabieg\w*"]):
         reply = f"Chętnie umówimy Panią na **zabieg**! Najlepiej skontaktować się bezpośrednio z salonem, aby poznać aktualne terminy i dobrać pasujący dzień. Czy możemy zaproponować Pani kontakt telefoniczny? {PHONE_NUMBER} 🌸"
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
         
-    # === REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ ===
+    # REGUŁA: OGÓLNE PYTANIE O KONSULTACJĘ
     elif any(w in text_lower for w in ["konsultacj\w*", "doradztwo\w*", "porada\w*"]):
         reply = f"Oferujemy bezpłatne konsultacje, które trwają około 1 godziny. Jest to idealny czas na omówienie wszelkich obaw i dobranie metody. Czy chciałaby Pani umówić termin? Możemy to zrobić telefonicznie: {PHONE_NUMBER} 🌿."
         update_history(session, user_message, reply)
@@ -349,7 +322,7 @@ def chat():
     INSTRUKCJE SPECJALNE DLA MODELU:
     1. Jesteś ekspertem-mikropigmentologiem z 20-letnim doświadczeniem. Odpowiadasz w języku polskim.
     2. Ton: **BARDZO CIEPŁY, PRZYJACIELSKI, LEKKI i LUDZKI.** Twój styl powinien być **ciepły, wspierający i osobisty, jak rozmowa z przyjazną specjalistką**, unikaj sztywnej, chłodnej formalności.
-    3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"**. **Koniecznie stosuj żeńskie formy czasowników** (np. "chciałaby Pani", "powinna Pani", "rozumiemy Pani obawy"). **Unikaj** błędnych, potocznych konstrukcji typu "interesuje Pani" lub "Panią interesuje technika". Zamiast tego używaj poprawnych zaimków i czasowników: "Jaka technika Panią interesuje?", "Czy szuka Pani naturalnego efektu?". **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**.
+    3. **BEZPOŚREDNIE ZWRACANIE SIĘ:** Zawsze zwracaj się bezpośrednio do Klientki, używając formy **"Pani"**. **Koniecznie stosuj żeńskie formy czasowników** (np. "chciałaby Pani", "powinna Pani", "rozumiemy Pani obawy"). **Unikaj** błędnych, potocznych konstrukcji. Zamiast tego używaj poprawnych zaimków i czasowników: "Jaka technika Panią interesuje?", "Czy szuka Pani naturalnego efektu?". **NIGDY nie używaj formy trzeciej osoby, takich jak "klientka musi"**.
     4. **Emocje i Zaufanie:** Aktywnie używaj wyrażeń budujących zaufanie i bliskość: "Rozumiemy Pani obawy", "To bardzo ważne pytanie, chętnie pomożemy", "W naszym salonie dbamy o...".
     5. Unikaj formy "ja". Używaj form: "nasz salon", "eksperci robią", "możemy doradzić". Używaj emotek z wyczuciem (max 2-3 w całej odpowiedzi).
     6. Zawsze bazuj na faktach zawartych w DANYCH SALONU i WIEDZY PMU.
@@ -357,7 +330,7 @@ def chat():
     8. **Formatowanie:** W przypadku złożonych pytań (jak techniki lub przeciwwskazania) używaj **list punktowanych** i **pogrubień** w tekście.
     9. **ZASADA KOMUNIKACJI:** Odpowiadaj bezpośrednio na pytanie, traktując to jako ciągłą konwersację.
     10. **CENA/TERMIN:** Jeśli użytkownik pyta o cenę, podaj ją, używając danych z sekcji CENNIK w WIEDZY PMU. TYLKO w sprawie rezerwacji terminu lub jeśli pytania dot. innych szczegółów logistycznych, zachęcaj do kontaktu telefonicznego: {PHONE_NUMBER}.
-    11. **ANGAAŻOWANIE (Opcjonalne):** Po udzieleniu wyczerpującej odpowiedzi, model **może** (ale nie musi) zasugerować kolejny logiczny temat lub zadać delikatne, otwarte pytanie związane z kontekstem. Rób to tylko wtedy, gdy czujesz, że Klientka potrzebuje dalszej pomocy lub kierunku, np. po omówieniu ceny zapytaj o **metodę** lub po omówieniu gojenia zapytaj o **przeciwwskazania**. To ma budować płynność rozmowy, a nie być sztywnym wymogiem.
+    11. **ANGAAŻOWANIE (Opcjonalne):** Po udzieleniu wyczerpującej odpowiedzi, model **może** (ale nie musi) zasugerować kolejny logiczny temat lub zadać delikatne, otwarte pytanie związane z kontekstem. Rób to tylko wtedy, gdy czujesz, że Klientka potrzebuje dalszej pomocy lub kierunku.
     """
 
     messages = [{"role": "system", "content": system_prompt}]
