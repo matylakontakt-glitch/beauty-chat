@@ -22,6 +22,7 @@
           --blur: 20px;
           --radius-lg: 24px;
           --radius-md: 12px;
+          --cta-color: #FF69B4; /* Delikatny Róż / Hot Pink */
         }
 
         /* === STYLIZACJA TŁA I CZCIONKI === */
@@ -47,6 +48,19 @@
           color: var(--accent);
           margin-bottom: 18px;
           text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+          position: relative;
+          padding-bottom: 10px;
+        }
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            opacity: 0.8;
         }
 
         .chat-wrapper {
@@ -92,20 +106,22 @@
           gap: 10px;
         }
 
-        /* === Avatar bota === */
+        /* === Avatar bota (Luksusowy Gradient) === */
         .avatar {
           flex-shrink: 0;
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: var(--accent);
-          color: #000;
-          font-weight: 500;
+          /* Luksusowy Gradient Różowo-Brzoskwiniowy */
+          background: linear-gradient(45deg, #FF69B4, #FFB6C1); 
+          color: #333; 
+          font-weight: 600;
           font-size: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+          box-shadow: 0 0 10px rgba(255, 105, 180, 0.4); 
+          border: 1px solid rgba(255, 255, 255, 0.2); 
         }
 
         /* === Tekst wiadomości === */
@@ -152,6 +168,44 @@
         .bot .avatar {
           order: 1;
         }
+        
+        /* === NOWY ELEMENT: Call To Action Button (CTA) === */
+        .call-to-action {
+            /* Nowa, oddzielna sekcja pod wiadomością bota */
+            margin-top: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: flex-start; /* Przyczepiamy do strony bota */
+            padding-left: 38px; /* Dopasowanie do avatara */
+        }
+
+        .call-to-action a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--cta-color);
+            color: #000;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.5);
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        .call-to-action a:hover {
+            background: #FF8EB8; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.7);
+        }
+        
+        /* Ikona telefonu (prosty emoji) */
+        .call-to-action a::before {
+            content: '📞';
+            margin-right: 5px;
+        }
+
 
         /* ===== Input + button wrapper ===== */
         .input-row {
@@ -204,7 +258,7 @@
         /* === ANIMACJE === */
 
         /* subtelna animacja pojawiania się */
-        .message.bot, .message.user {
+        .message.bot, .message.user, .call-to-action {
           opacity: 0;
           animation: fadeIn 0.5s ease forwards;
         }
@@ -219,16 +273,16 @@
           color: rgba(255, 255, 255, 0.5);
           font-size: 18px;
           letter-spacing: 2px;
-          margin-left: 38px; /* Dopasowanie do awatara */
+          margin-left: 38px; /* Dopasowanie do avatara */
         }
         .typing .message-content {
-          background: none; /* Upewnienie się, że tło kropkowanej wiadomości jest przezroczyste */
+          background: none; 
           padding: 0;
         }
         .dot {
           display: inline-block;
           animation: blink 1.4s infinite both;
-          width: 8px; /* Dodanie małej szerokości dla lepszej widoczności kropek */
+          width: 8px; 
         }
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
@@ -242,10 +296,10 @@
         @media screen and (max-width: 768px) {
           body {
             background: #000;
-            padding: 10px; /* Mniejszy padding ogólny */
+            padding: 10px; 
             height: auto;
-            min-height: 100vh; /* Zapobiega problemom przy pojawianiu się klawiatury */
-            justify-content: flex-start; /* Centrum na górze */
+            min-height: 100vh; 
+            justify-content: flex-start; 
           }
 
           h2 {
@@ -256,7 +310,7 @@
 
           .chat-box {
             width: 100%;
-            max-width: 95vw; /* Daje mały margines po bokach */
+            max-width: 95vw; 
             height: 75vh;
             padding: 16px;
             border-radius: 16px;
@@ -265,7 +319,7 @@
 
           .input-row {
             width: 100%;
-            max-width: 95vw; /* Dopasowanie do szerokości chat-box */
+            max-width: 95vw; 
             gap: 8px;
             margin-top: 12px;
           }
@@ -295,6 +349,10 @@
             height: 26px;
             font-size: 13px;
           }
+          
+          .call-to-action {
+              padding-left: 36px;
+          }
         }
     </style>
 </head>
@@ -313,7 +371,27 @@
         const input = document.getElementById('message');
         const chat = document.getElementById('chat');
         const sendBtn = document.getElementById('sendBtn');
-        let isSending = false; // Flaga blokująca wielokrotne wysłanie
+        let isSending = false;
+        const PHONE = "881622882"; // Numer do CTA
+        const CALL_KEYWORDS = ["kontakt telefoniczny", "umówić termin", "zadzwoń", "zadzwonić", PHONE.replace(/\s/g, "")];
+
+        // 🔹 Funkcja dodająca Przycisk Call-to-Action
+        function addCallToAction(phoneNumber) {
+            const ctaDiv = document.createElement('div');
+            ctaDiv.classList.add('call-to-action');
+            
+            const formattedPhone = phoneNumber.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
+
+            ctaDiv.innerHTML = `
+                <a href="tel:${phoneNumber}">
+                    Zadzwoń do Recepcji: ${formattedPhone}
+                </a>
+            `;
+
+            chat.appendChild(ctaDiv);
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+        }
+
 
         // 🔹 Formatowane dodawanie wiadomości
         function addMessage(text, sender) {
@@ -323,8 +401,8 @@
             if (sender === 'bot') {
                 let formatted = text
                     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // pogrubienie markdown
-                    .replace(/\n{2,}/g, "<br><br>")                    // duży odstęp (2+ nowe linie)
-                    .replace(/\n/g, "<br>");                           // zwykły enter = nowa linia
+                    .replace(/\n{2,}/g, "<br><br>")                    
+                    .replace(/\n/g, "<br>");                           
 
                 msg.innerHTML = `
                     <div class="avatar">P</div>
@@ -335,13 +413,29 @@
             }
 
             chat.appendChild(msg);
-            chat.scrollTop = chat.scrollHeight;
+            
+            // Płynne przewijanie
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+
+            // ** LOGIKA CTA **
+            if (sender === 'bot') {
+                const normalizedText = text.toLowerCase().replace(/\s/g, "");
+                
+                // Sprawdzenie, czy odpowiedź bota sugeruje telefon
+                const shouldShowCta = CALL_KEYWORDS.some(keyword => 
+                    normalizedText.includes(keyword.toLowerCase().replace(/\s/g, ""))
+                );
+
+                if (shouldShowCta) {
+                    addCallToAction(PHONE);
+                }
+            }
         }
 
         // Animacja "pisania"
         function showTyping() {
             const typing = document.createElement('div');
-            typing.classList.add('message', 'bot', 'typing'); // Dodajemy klasę 'typing' dla animacji CSS
+            typing.classList.add('message', 'bot', 'typing'); 
             typing.id = 'typing';
             typing.innerHTML = `
                 <div class="avatar">P</div>
@@ -350,7 +444,7 @@
                 </div>
             `;
             chat.appendChild(typing);
-            chat.scrollTop = chat.scrollHeight;
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
         }
         function hideTyping() {
             const t = document.getElementById('typing');
@@ -359,12 +453,12 @@
 
         // Wysyłanie wiadomości
         async function sendMessage() {
-            if (isSending) return; // Blokada
+            if (isSending) return; 
             
             const msg = input.value.trim();
             if (!msg) return;
 
-            isSending = true; // Zablokuj wysyłanie
+            isSending = true; 
             sendBtn.disabled = true;
             input.disabled = true;
 
@@ -379,7 +473,6 @@
                     body: JSON.stringify({ message: msg })
                 });
                 
-                // Ustawiamy minimalny czas na animację ładowania
                 await new Promise(r => setTimeout(r, 800)); 
 
                 const data = await response.json();
@@ -390,7 +483,7 @@
                 hideTyping();
                 addMessage("Przepraszamy, wystąpił błąd komunikacji. Prosimy spróbować ponownie.", 'bot');
             } finally {
-                isSending = false; // Odblokuj wysyłanie
+                isSending = false; 
                 sendBtn.disabled = false;
                 input.disabled = false;
                 input.focus();
@@ -404,13 +497,12 @@
                 const res = await fetch('/start');
                 const data = await res.json();
                 
-                await new Promise(r => setTimeout(r, 1200)); // Czekamy na ładne powitanie
+                await new Promise(r => setTimeout(r, 1200)); 
 
                 hideTyping();
                 addMessage(data.reply, 'bot');
             } catch (error) {
                 hideTyping();
-                // Awaryjna wiadomość
                 addMessage("Cześć! 👋 Jestem Beauty Ekspertką — zapytaj mnie o makijaż permanentny 💋✨", "bot");
             }
             input.focus();
@@ -427,7 +519,6 @@
     </script>
 </body>
 </html>
-
 
 
 
