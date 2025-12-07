@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template # ZMIENIONY IMPORT: render_template zamiast send_from_directory
+from flask import Flask, request, jsonify, render_template 
 from dotenv import load_dotenv
 from openai import OpenAI
 import os, random, re
@@ -74,7 +74,12 @@ PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymet
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-app = Flask(__name__)
+# 🔴 KLUCZOWA POPRAWKA: JAWNE ZDEFINIOWANIE FOLDERÓW DLA FLASKA
+app = Flask(
+    __name__, 
+    template_folder='templates', 
+    static_folder='static'
+)
 client = OpenAI(api_key=api_key)
 
 # === CENNIK ===
@@ -194,7 +199,9 @@ def chat():
 
     if not user_message:
         reply = 'Napisz coś, żebym mogła pomóc 💬'
-        update_history(session, user_message, reply)
+        # użycie 'session' przed deklaracją - lepiej obsłużyć
+        if user_ip in SESSION_DATA:
+            update_history(SESSION_DATA[user_ip], user_message, reply)
         return jsonify({'reply': reply})
 
     session = SESSION_DATA[user_ip]
@@ -373,7 +380,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
 
 
 
