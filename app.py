@@ -74,11 +74,12 @@ PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymet
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-# 🟢 KLUCZOWA POPRAWKA: JAWNE ZDEFINIOWANIE FOLDERÓW DLA FLASKA ZGODNIE ZE STRUKTURĄ
+# 🟢 KLUCZOWA POPRAWKA (Zgodnie z prośbą): DEFINICJA ŚCIEŻEK BEZWZGLĘDNYCH
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(
     __name__, 
-    template_folder='templates', 
-    static_folder='static'
+    template_folder=os.path.join(BASE_DIR, 'templates'), 
+    static_folder=os.path.join(BASE_DIR, 'static')
 )
 client = OpenAI(api_key=api_key)
 
@@ -171,8 +172,8 @@ def update_history(session, user_msg, bot_reply):
 # === STRONA GŁÓWNA, POWITANIE (NOWA WERSJA) ===
 @app.route('/')
 def serve_index():
-    # 🟢 ZMIANA: Zamiast send_from_directory używamy render_template. 
-    # Flask automatycznie szuka index.html w folderze 'templates' (zgodnie z konfiguracją)
+    # Zamiast send_from_directory używamy render_template. 
+    # Dzięki konfiguracji Flask zna ścieżki do folderów.
     return render_template('index.html') 
 
 @app.route('/start', methods=['GET'])
@@ -381,8 +382,6 @@ def chat():
 # === START ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
-
-
 
 
 
