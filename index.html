@@ -22,7 +22,7 @@
           --blur: 20px;
           --radius-lg: 24px;
           --radius-md: 12px;
-          --cta-color: #FF69B4; /* Delikatny Róż / Hot Pink */
+          --cta-color: #ffffff; /* Biały dla CTA */
         }
 
         /* === STYLIZACJA TŁA I CZCIONKI === */
@@ -106,21 +106,20 @@
           gap: 10px;
         }
 
-        /* === Avatar bota (Luksusowy Gradient) === */
+        /* === Avatar bota (Biały, Czarny Tekst) === */
         .avatar {
           flex-shrink: 0;
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          /* Luksusowy Gradient Różowo-Brzoskwiniowy */
-          background: linear-gradient(45deg, #FF69B4, #FFB6C1); 
-          color: #333; 
+          background: var(--accent); /* Biały */
+          color: #000; /* Czarny tekst */
           font-weight: 600;
           font-size: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 10px rgba(255, 105, 180, 0.4); 
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.15); /* Subtelny cień */
           border: 1px solid rgba(255, 255, 255, 0.2); 
         }
 
@@ -169,38 +168,40 @@
           order: 1;
         }
         
-        /* === NOWY ELEMENT: Call To Action Button (CTA) === */
+        /* === ZMIANA: Call To Action Button (CTA - SZYBA PREMIUM) === */
         .call-to-action {
-            /* Nowa, oddzielna sekcja pod wiadomością bota */
             margin-top: 10px;
             margin-bottom: 10px;
             width: 100%;
             display: flex;
-            justify-content: flex-start; /* Przyczepiamy do strony bota */
-            padding-left: 38px; /* Dopasowanie do avatara */
+            justify-content: flex-start; 
+            padding-left: 38px;
         }
 
         .call-to-action a {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--cta-color);
-            color: #000;
+            /* Efekt Szyby Glass */
+            background: rgba(255, 255, 255, 0.9); /* Prawie białe, lekka przezroczystość */
+            backdrop-filter: blur(5px);
+            color: #000; /* Czarna czcionka */
             font-weight: 600;
             padding: 10px 18px;
             border-radius: var(--radius-md);
             text-decoration: none;
-            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.4); /* Biała ramka 'szyby' */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 0 5px rgba(255, 255, 255, 0.5); /* Cień i wewnętrzny blask */
             transition: all 0.3s ease;
             font-size: 14px;
         }
         .call-to-action a:hover {
-            background: #FF8EB8; 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.7);
+            background: rgba(255, 255, 255, 1); /* Czysta biel przy najechaniu */
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4); /* Większy cień */
         }
         
-        /* Ikona telefonu (prosty emoji) */
+        /* Ikona telefonu */
         .call-to-action a::before {
             content: '📞';
             margin-right: 5px;
@@ -350,8 +351,14 @@
             font-size: 13px;
           }
           
+          /* ZMIANA MOBILE: Wyśrodkowanie i zmniejszenie CTA */
           .call-to-action {
-              padding-left: 36px;
+              padding-left: 0; /* Usuwamy stały padding */
+              justify-content: center; /* Wyśrodkowanie */
+          }
+          .call-to-action a {
+              padding: 8px 14px; /* Mniejszy padding */
+              font-size: 13px; /* Mniejsza czcionka */
           }
         }
     </style>
@@ -519,6 +526,3 @@
     </script>
 </body>
 </html>
-
-
-
