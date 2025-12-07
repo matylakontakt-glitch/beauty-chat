@@ -36,7 +36,7 @@ TECHNIKI - USTA:
 
 **UWAGA: W naszym salonie nie wykonujemy makijażu permanentnego powiek (eyeliner/zagęszczenie linii rzęs), Microbladingu oraz metody Nano Brows. Skupiamy się wyłącznie na brwiach i ustach, w sprawdzonych i najmodniejszych technikach.**
 
-PRZECIWWSKAZANIA (BEZPIECZEŃSTWO):
+PRZECIWWSKAZANIA (BEZPIECZEŃSTWA):
 - Bezwzględne: Ciąża, laktacja, nowotwory (bez zgody lekarza), **aktywna opryszczka**, **inne infekcje wirusowe** (np. przeziębienie, grypa), **mocna/świeża opalenizna**, łuszczyca w miejscu zabiegu.
 - Czasowe (Karencja):
   * Odżywki do rzęs: Odstawić 3-6 mies. przed zabiegiem (jeśli planowany zabieg na oczy, ale my go nie wykonujemy).
@@ -74,7 +74,7 @@ PAMIĘTAJ: Makijaż permanentny to wygoda, oszczędność czasu i korekta asymet
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-# 🔴 KLUCZOWA POPRAWKA: JAWNE ZDEFINIOWANIE FOLDERÓW DLA FLASKA
+# 🟢 KLUCZOWA POPRAWKA: JAWNE ZDEFINIOWANIE FOLDERÓW DLA FLASKA ZGODNIE ZE STRUKTURĄ
 app = Flask(
     __name__, 
     template_folder='templates', 
@@ -171,7 +171,8 @@ def update_history(session, user_msg, bot_reply):
 # === STRONA GŁÓWNA, POWITANIE (NOWA WERSJA) ===
 @app.route('/')
 def serve_index():
-    # Flask szuka index.html w folderze 'templates'
+    # 🟢 ZMIANA: Zamiast send_from_directory używamy render_template. 
+    # Flask automatycznie szuka index.html w folderze 'templates' (zgodnie z konfiguracją)
     return render_template('index.html') 
 
 @app.route('/start', methods=['GET'])
