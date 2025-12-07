@@ -1,27 +1,430 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Beauty Chat</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beauty Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Ustawienie domyślne dla łatwiejszego zarządzania szerokością i paddingami */
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
 
+        /* === ZMIENNE CSS (ROOT) === */
+        :root {
+          --glass-bg: rgba(10, 10, 10, 0.65);
+          --accent: #ffffff;
+          --accent-soft: rgba(255, 255, 255, 0.65);
+          --blur: 20px;
+          --radius-lg: 24px;
+          --radius-md: 12px;
+        }
+
+        /* === STYLIZACJA TŁA I CZCIONKI === */
+        body {
+          font-family: "Inter", sans-serif;
+          /* Nowoczesne, ciemne tło */
+          background: radial-gradient(circle at center, #0d0d0d 0%, #000 100%);
+          color: var(--accent);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+          -webkit-font-smoothing: antialiased;
+        }
+
+        h2 {
+          font-weight: 400;
+          font-size: 22px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: var(--accent);
+          margin-bottom: 18px;
+          text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        /* === GŁÓWNY KONTENER CZATU === */
+        .chat-box {
+          width: 400px;
+          height: 520px;
+          border-radius: var(--radius-lg);
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+          /* Efekt glassmorphism */
+          background: var(--glass-bg);
+          backdrop-filter: blur(var(--blur));
+          box-shadow: 0 0 30px rgba(255, 255, 255, 0.05), inset 0 0 10px rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        /* Stylizacja Scrollbara (tylko Chrome/Edge/Safari) */
+        .chat-box::-webkit-scrollbar {
+          width: 6px;
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+
+        /* === Wiadomości === */
+        .message {
+          margin: 8px 0;
+          font-size: 14px;
+          line-height: 1.5;
+          word-wrap: break-word;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        /* === Avatar bota === */
+        .avatar {
+          flex-shrink: 0;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: var(--accent);
+          color: #000;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+        }
+
+        /* === Tekst wiadomości === */
+        .message-content {
+          max-width: 80%;
+          border-radius: 20px;
+          padding: 8px 14px;
+          display: inline-block;
+          white-space: normal;
+          line-height: 1.7;
+        }
+
+        .message-content strong {
+          font-weight: 600;
+          color: inherit;
+          text-shadow: none;
+          background: none;
+        }
+
+
+        /* === Wiadomości użytkownika (po prawej) === */
+        .user {
+          justify-content: flex-end;
+        }
+        .user .message-content {
+          text-align: right;
+          background: rgba(255, 255, 255, 0.08);
+          color: var(--accent);
+          backdrop-filter: blur(5px);
+          box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+
+        /* === Wiadomości bota (po lewej, z avatarem) === */
+        .bot {
+          justify-content: flex-start;
+        }
+        .bot .message-content {
+          order: 2;
+          text-align: left;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--accent-soft);
+          backdrop-filter: blur(4px);
+        }
+        .bot .avatar {
+          order: 1;
+        }
+
+        /* ===== Input + button wrapper ===== */
+        .input-row {
+          display: flex;
+          width: 400px;
+          margin-top: 16px;
+          gap: 10px;
+        }
+
+        input {
+          flex: 1;
+          padding: 14px 16px;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          outline: none;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--accent);
+          font-size: 14px;
+          transition: all 0.3s ease;
+          box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+        input::placeholder {
+          color: rgba(255, 255, 255, 0.35);
+        }
+        input:focus {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== Przycisk Wyślij ===== */
+        button {
+          background: rgba(255, 255, 255, 0.08);
+          color: var(--accent);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: var(--radius-md);
+          padding: 0 20px;
+          font-size: 14px;
+          font-weight: 400;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+          transition: all 0.25s ease;
+          flex-shrink: 0;
+        }
+        button:hover {
+          background: rgba(255, 255, 255, 0.18);
+          border-color: rgba(255, 255, 255, 0.35);
+          transform: translateY(-1px);
+        }
+
+        /* === ANIMACJE === */
+
+        /* subtelna animacja pojawiania się */
+        .message.bot, .message.user {
+          opacity: 0;
+          animation: fadeIn 0.5s ease forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* animacja kropek - Oczekiwanie na odpowiedź */
+        .typing {
+          text-align: left;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 18px;
+          letter-spacing: 2px;
+          margin-left: 38px; /* Dopasowanie do awatara */
+        }
+        .typing .message-content {
+          background: none; /* Upewnienie się, że tło kropkowanej wiadomości jest przezroczyste */
+          padding: 0;
+        }
+        .dot {
+          display: inline-block;
+          animation: blink 1.4s infinite both;
+          width: 8px; /* Dodanie małej szerokości dla lepszej widoczności kropek */
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes blink {
+          0%, 80%, 100% { opacity: 0; }
+          40% { opacity: 1; }
+        }
+
+        /* ===== RESPONSYWNOŚĆ (Telefony i Małe Tablety) ===== */
+        @media screen and (max-width: 768px) {
+          body {
+            background: #000;
+            padding: 10px; /* Mniejszy padding ogólny */
+            height: auto;
+            min-height: 100vh; /* Zapobiega problemom przy pojawianiu się klawiatury */
+            justify-content: flex-start; /* Centrum na górze */
+          }
+
+          h2 {
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+          }
+
+          .chat-box {
+            width: 100%;
+            max-width: 95vw; /* Daje mały margines po bokach */
+            height: 75vh;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+          }
+
+          .input-row {
+            width: 100%;
+            max-width: 95vw; /* Dopasowanie do szerokości chat-box */
+            gap: 8px;
+            margin-top: 12px;
+          }
+
+          input {
+            padding: 12px 14px;
+            font-size: 15px;
+            border-radius: 10px;
+          }
+
+          button {
+            padding: 10px 14px;
+            font-size: 15px;
+            border-radius: 10px;
+            transform: none;
+          }
+
+          .message-content {
+            font-size: 15px;
+            line-height: 1.45;
+            padding: 10px 14px;
+            max-width: 90%; 
+          }
+
+          .avatar {
+            width: 26px;
+            height: 26px;
+            font-size: 13px;
+          }
+        }
+    </style>
 </head>
 <body>
-<h2>Beauty Chat</h2>
-<div class="chat-wrapper">
-  <div class="chat-box" id="chat"></div>
+    <h2>Beauty Chat</h2>
+    <div class="chat-wrapper">
+        <div class="chat-box" id="chat"></div>
 
-  <div class="input-row">
-    <input id="message" placeholder="Napisz wiadomość..." />
-    <button id="sendBtn">Wyślij</button>
-  </div>
-</div>
+        <div class="input-row">
+            <input id="message" placeholder="Napisz wiadomość..." />
+            <button id="sendBtn">Wyślij</button>
+        </div>
+    </div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        const input = document.getElementById('message');
+        const chat = document.getElementById('chat');
+        const sendBtn = document.getElementById('sendBtn');
+        let isSending = false; // Flaga blokująca wielokrotne wysłanie
 
+        // 🔹 Formatowane dodawanie wiadomości
+        function addMessage(text, sender) {
+            const msg = document.createElement('div');
+            msg.classList.add('message', sender);
+
+            if (sender === 'bot') {
+                let formatted = text
+                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // pogrubienie markdown
+                    .replace(/\n{2,}/g, "<br><br>")                    // duży odstęp (2+ nowe linie)
+                    .replace(/\n/g, "<br>");                           // zwykły enter = nowa linia
+
+                msg.innerHTML = `
+                    <div class="avatar">P</div>
+                    <div class="message-content">${formatted}</div>
+                `;
+            } else {
+                msg.innerHTML = `<div class="message-content">${text}</div>`;
+            }
+
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Animacja "pisania"
+        function showTyping() {
+            const typing = document.createElement('div');
+            typing.classList.add('message', 'bot', 'typing'); // Dodajemy klasę 'typing' dla animacji CSS
+            typing.id = 'typing';
+            typing.innerHTML = `
+                <div class="avatar">P</div>
+                <div class="message-content">
+                    <span class="dot">•</span><span class="dot">•</span><span class="dot">•</span>
+                </div>
+            `;
+            chat.appendChild(typing);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        function hideTyping() {
+            const t = document.getElementById('typing');
+            if (t) t.remove();
+        }
+
+        // Wysyłanie wiadomości
+        async function sendMessage() {
+            if (isSending) return; // Blokada
+            
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            isSending = true; // Zablokuj wysyłanie
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            addMessage(msg, 'user');
+            input.value = '';
+            showTyping();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                
+                // Ustawiamy minimalny czas na animację ładowania
+                await new Promise(r => setTimeout(r, 800)); 
+
+                const data = await response.json();
+                hideTyping();
+                addMessage(data.reply, 'bot');
+
+            } catch (error) {
+                hideTyping();
+                addMessage("Przepraszamy, wystąpił błąd komunikacji. Prosimy spróbować ponownie.", 'bot');
+            } finally {
+                isSending = false; // Odblokuj wysyłanie
+                sendBtn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        // Wiadomość powitalna - wykonuje się automatycznie po załadowaniu
+        async function loadWelcome() {
+            showTyping();
+            try {
+                const res = await fetch('/start');
+                const data = await res.json();
+                
+                await new Promise(r => setTimeout(r, 1200)); // Czekamy na ładne powitanie
+
+                hideTyping();
+                addMessage(data.reply, 'bot');
+            } catch (error) {
+                hideTyping();
+                // Awaryjna wiadomość
+                addMessage("Cześć! 👋 Jestem Beauty Ekspertką — zapytaj mnie o makijaż permanentny 💋✨", "bot");
+            }
+            input.focus();
+        }
+
+        // Obsługa Enter i kliknięcia
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Ładowanie powitania przy starcie
+        window.onload = loadWelcome;
+    </script>
 </body>
 </html>
 
