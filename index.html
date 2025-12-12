@@ -14,22 +14,22 @@
           box-sizing: border-box;
         }
 
-        /* === ZMIENNE CSS (ROOT) === */
+        /* === ZMIENNE CSS (ROOT) - ODWROCENIE KOLORÓW === */
         :root {
-          --glass-bg: rgba(10, 10, 10, 0.65);
-          --accent: #ffffff;
-          --accent-soft: rgba(255, 255, 255, 0.65);
+          --glass-bg: rgba(255, 255, 255, 0.2); /* JASNE SZKŁO */
+          --accent: #000000; /* CZARNY AKCENT */
+          --accent-soft: rgba(0, 0, 0, 0.7); /* MIĘKKI CZARNY */
           --blur: 20px;
           --radius-lg: 24px;
           --radius-md: 12px;
-          --cta-color: #ffffff; /* Biały dla CTA */
+          --cta-color: #000000; /* CZARNY DLA CTA */
         }
 
         /* === STYLIZACJA TŁA I CZCIONKI === */
         body {
           font-family: "Inter", sans-serif;
-          /* Nowoczesne, ciemne tło */
-          background: radial-gradient(circle at center, #0d0d0d 0%, #000 100%);
+          /* Nowoczesne, jasne tło */
+          background: radial-gradient(circle at center, #f5f5f5 0%, #ffffff 100%);
           color: var(--accent);
           display: flex;
           flex-direction: column;
@@ -47,7 +47,7 @@
           text-transform: uppercase;
           color: var(--accent);
           margin-bottom: 18px;
-          text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+          text-shadow: 0 0 20px rgba(0, 0, 0, 0.05); /* Ciemny, subtelny cień */
           position: relative;
           padding-bottom: 10px;
         }
@@ -59,7 +59,7 @@
             transform: translateX(-50%);
             width: 60%;
             height: 1px;
-            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.2), transparent); /* Ciemna linia */
             opacity: 0.8;
         }
 
@@ -79,10 +79,10 @@
           flex-direction: column;
           overflow-y: auto;
           /* Efekt glassmorphism */
-          background: var(--glass-bg);
+          background: rgba(0, 0, 0, 0.05); /* Ciemniejsze szkło na jasnym tle */
           backdrop-filter: blur(var(--blur));
-          box-shadow: 0 0 30px rgba(255, 255, 255, 0.05), inset 0 0 10px rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.05); /* Ciemniejsze cienie */
+          border: 1px solid rgba(0, 0, 0, 0.1); /* Ciemna ramka */
           transition: all 0.3s ease;
         }
 
@@ -91,7 +91,7 @@
           width: 6px;
         }
         .chat-box::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(0, 0, 0, 0.15); /* Ciemniejszy scrollbar */
           border-radius: 10px;
         }
 
@@ -106,21 +106,21 @@
           gap: 10px;
         }
 
-        /* === Avatar bota (Biały, Czarny Tekst) === */
+        /* === Avatar bota (Czarny, Biały Tekst) === */
         .avatar {
           flex-shrink: 0;
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: var(--accent); /* Biały */
-          color: #000; /* Czarny tekst */
+          background: var(--accent); /* Czarny */
+          color: #fff; /* Biały tekst */
           font-weight: 600;
           font-size: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 8px rgba(255, 255, 255, 0.15); /* Subtelny cień */
-          border: 1px solid rgba(255, 255, 255, 0.2); 
+          box-shadow: 0 0 8px rgba(0, 0, 0, 0.15); /* Subtelny cień */
+          border: 1px solid rgba(0, 0, 0, 0.2); 
         }
 
         /* === Tekst wiadomości === */
@@ -147,10 +147,10 @@
         }
         .user .message-content {
           text-align: right;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(0, 0, 0, 0.1); /* Lekko ciemne tło wiadomości */
           color: var(--accent);
           backdrop-filter: blur(5px);
-          box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+          box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
         }
 
         /* === Wiadomości bota (po lewej, z avatarem) === */
@@ -160,7 +160,7 @@
         .bot .message-content {
           order: 2;
           text-align: left;
-          background: rgba(255, 255, 255, 0.05);
+          background: rgba(0, 0, 0, 0.05); /* Bardzo lekko ciemne tło */
           color: var(--accent-soft);
           backdrop-filter: blur(4px);
         }
@@ -168,7 +168,7 @@
           order: 1;
         }
         
-        /* === ZMIANA: Call To Action Button (CTA - SZYBA PREMIUM) === */
+        /* === ZMIANA: Call To Action Button (CTA - SZYBA PREMIUM ODWROCENIE) === */
         .call-to-action {
             margin-top: 10px;
             margin-bottom: 10px;
@@ -183,20 +183,20 @@
             align-items: center;
             gap: 8px;
             /* Efekt Szyby Glass */
-            background: rgba(255, 255, 255, 0.9); /* Prawie białe, lekka przezroczystość */
+            background: rgba(0, 0, 0, 0.9); /* Prawie czarne, lekka przezroczystość */
             backdrop-filter: blur(5px);
-            color: #000; /* Czarna czcionka */
+            color: #fff; /* Biała czcionka */
             font-weight: 600;
             padding: 10px 18px;
             border-radius: var(--radius-md);
             text-decoration: none;
-            border: 1px solid rgba(255, 255, 255, 0.4); /* Biała ramka 'szyby' */
+            border: 1px solid rgba(0, 0, 0, 0.4); /* Ciemna ramka 'szyby' */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 0 5px rgba(255, 255, 255, 0.5); /* Cień i wewnętrzny blask */
             transition: all 0.3s ease;
             font-size: 14px;
         }
         .call-to-action a:hover {
-            background: rgba(255, 255, 255, 1); /* Czysta biel przy najechaniu */
+            background: rgba(0, 0, 0, 1); /* Czysta czerń przy najechaniu */
             transform: translateY(-1px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4); /* Większy cień */
         }
@@ -208,7 +208,7 @@
         }
 
 
-        /* ===== Input + button wrapper ===== */
+        /* ===== Input + button wrapper - ODWROCENIE ===== */
         .input-row {
           display: flex;
           width: 400px;
@@ -220,27 +220,27 @@
           flex: 1;
           padding: 14px 16px;
           border-radius: var(--radius-md);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(0, 0, 0, 0.2); /* Ciemna ramka */
           outline: none;
-          background: rgba(255, 255, 255, 0.05);
-          color: var(--accent);
+          background: rgba(0, 0, 0, 0.05); /* Lekko ciemne tło inputu */
+          color: var(--accent); /* Czarny tekst */
           font-size: 14px;
           transition: all 0.3s ease;
-          box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+          box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
         }
         input::placeholder {
-          color: rgba(255, 255, 255, 0.35);
+          color: rgba(0, 0, 0, 0.35); /* Ciemny placeholder */
         }
         input:focus {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.3);
+          background: rgba(0, 0, 0, 0.1);
+          border-color: rgba(0, 0, 0, 0.3);
         }
 
-        /* ===== Przycisk Wyślij ===== */
+        /* ===== Przycisk Wyślij - ODWROCENIE ===== */
         button {
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(0, 0, 0, 0.08);
           color: var(--accent);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(0, 0, 0, 0.2);
           border-radius: var(--radius-md);
           padding: 0 20px;
           font-size: 14px;
@@ -251,8 +251,8 @@
           flex-shrink: 0;
         }
         button:hover {
-          background: rgba(255, 255, 255, 0.18);
-          border-color: rgba(255, 255, 255, 0.35);
+          background: rgba(0, 0, 0, 0.18);
+          border-color: rgba(0, 0, 0, 0.35);
           transform: translateY(-1px);
         }
 
@@ -268,10 +268,10 @@
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* animacja kropek - Oczekiwanie na odpowiedź */
+        /* animacja kropek - Oczekiwanie na odpowiedź - ODWROCENIE KOLORU KROPEK */
         .typing {
           text-align: left;
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(0, 0, 0, 0.5); /* Ciemne kropki */
           font-size: 18px;
           letter-spacing: 2px;
           margin-left: 38px; /* Dopasowanie do avatara */
@@ -293,10 +293,10 @@
           40% { opacity: 1; }
         }
 
-        /* ===== RESPONSYWNOŚĆ (Telefony i Małe Tablety) ===== */
+        /* ===== RESPONSYWNOŚĆ (Telefony i Małe Tablety) - ODWROCENIE ===== */
         @media screen and (max-width: 768px) {
           body {
-            background: #000;
+            background: #fff; /* Czysta biel na telefonie */
             padding: 10px; 
             height: auto;
             min-height: 100vh; 
@@ -315,7 +315,7 @@
             height: 75vh;
             padding: 16px;
             border-radius: 16px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
           }
 
           .input-row {
@@ -525,4 +525,4 @@
         window.onload = loadWelcome;
     </script>
 </body>
-</html>
+</html> 
