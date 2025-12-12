@@ -39,7 +39,7 @@
           height: 100vh;
           margin: 0;
           -webkit-font-smoothing: antialiased;
-          overflow: hidden; /* Usuwamy scrollbar body */
+          overflow-x: hidden; /* 🎯 NAPRAWA 1: Usunięcie poziomego scrolla na BODY */
           position: relative;
         }
 
@@ -89,7 +89,7 @@
           display: flex;
           flex-direction: column;
           overflow-y: auto;
-          position: relative; /* Potrzebne do pseudoelementu */
+          position: relative; 
           z-index: 10;
           
           /* Premium Glassmorphism */
@@ -99,13 +99,18 @@
           border: 1px solid rgba(255, 255, 255, 0.9); 
           transition: all 0.5s ease;
         }
+        
+        /* 🎯 NAPRAWA 1: Usunięcie poziomego scrolla na desktop */
+        .chat-box {
+            overflow-x: hidden; 
+        }
 
         /* Refleks na chat-box po najechaniu (WOW) */
         .chat-box::after {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%; /* Start poza ekranem */
+            left: -100%; 
             width: 50%;
             height: 100%;
             background: rgba(255, 255, 255, 0.3);
@@ -116,7 +121,7 @@
             pointer-events: none;
         }
         .chat-box:hover::after {
-            left: 150%; /* Przesunięcie przez całą szerokość */
+            left: 150%; 
             opacity: 1;
             transition: all 1.2s ease;
         }
@@ -256,10 +261,10 @@
         /* ===== Input + button wrapper (AI Glass Inputs) ===== */
         .input-row {
           display: flex;
-          width: 420px; /* Szerokość dla desktop */
+          width: 100%; /* Ustawione na 100% */
+          max-width: 420px; /* Maksymalna szerokość dla desktop */
           margin-top: 20px;
           gap: 12px;
-          /* Ustawienie: Zapewnienie, że będzie działać jak kontener dla inputu */
           align-items: center; 
         }
 
@@ -296,7 +301,7 @@
           border: 1px solid var(--accent-gold);
           border-radius: var(--radius-md);
           padding: 0 25px;
-          height: 100%; /* Zapewnienie, że przycisk ma taką samą wysokość jak input */
+          height: 48px; /* Stała wysokość dopasowana do inputu */
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
@@ -375,7 +380,7 @@
           40% { opacity: 1; }
         }
 
-        /* ===== 🚨 NAPRAWIONA RESPONSYWNOŚĆ (Telefony i Małe Tablety) 🚨 ===== */
+        /* ===== RESPONSYWNOŚĆ (Telefony i Małe Tablety) ===== */
         @media screen and (max-width: 768px) {
           body {
             background: #fff; 
@@ -383,6 +388,7 @@
             height: auto;
             min-height: 100vh; 
             justify-content: flex-start; 
+            overflow-y: auto; /* Umożliwienie przewijania na mobile */
           }
           body::before {
               display: none; 
@@ -393,7 +399,8 @@
             margin-top: 20px;
             margin-bottom: 20px;
           }
-
+          
+          /* 🎯 NAPRAWA 2: Ustawienie pozycji inputu i dopasowanie paddingu chat-box */
           .chat-box {
             width: 100%;
             max-width: 95vw; 
@@ -402,36 +409,48 @@
             border-radius: 20px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
             backdrop-filter: blur(10px);
+            /* WAŻNE: Dodatkowy padding na dole, aby wiadomości nie były zasłaniane przez stały input-row */
+            padding-bottom: 90px; 
           }
           .chat-box:hover::after {
              left: -100%; 
              transition: none;
           }
 
-          /* 🎯 NAPRAWA: Zapewnienie, że input-row ma pełną szerokość i paddingi są dobre */
+          /* 🎯 NAPRAWA 2: Ustawienie inputu na stałe na dole (fixed) */
           .input-row {
-            width: 100%;
-            max-width: 95vw; 
+            position: fixed;
+            bottom: 10px; /* Lekkie oddzielenie od krawędzi */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%; /* Pełna szerokość mobilna */
+            max-width: 420px; /* Ograniczenie, jeśli okno jest zbyt szerokie */
             gap: 10px;
-            margin-top: 15px;
-            /* Zapewnienie, że jest wyśrodkowany względem reszty, ale i tak zajmuje 100% szerokości */
-            padding: 0 5px; 
+            margin-top: 0; /* Usuwamy margines, bo pozycja jest fixed */
+            padding: 0; 
             box-sizing: border-box; 
+            /* Dodajemy tło, żeby zasłonić przewijane wiadomości pod spodem */
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border-radius: var(--radius-md); 
+            z-index: 100;
+            padding: 8px 10px;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05); /* Subtelny cień na górze */
           }
 
           input {
             padding: 14px 16px;
             font-size: 15px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
+            background: var(--accent-light); /* Użycie czystej bieli dla lepszej czytelności na fixed input */
+            backdrop-filter: none;
           }
 
           button {
             padding: 0 16px;
             font-size: 15px;
             border-radius: 12px;
-            height: 44px; /* Dopasowanie wysokości przycisku do inputu na mobile */
+            height: 44px; 
           }
           button::after {
             display: none; 
