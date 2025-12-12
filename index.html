@@ -23,8 +23,8 @@
           --radius-lg: 24px;
           --radius-md: 12px;
           --cta-color: #000000; /* CZARNY DLA CTA */
-          /* ZM: Zmienne dla wiadomości bota (Jasne Glass) */
-          --bot-bg: rgba(255, 255, 255, 0.9); 
+          /* ZM: Zmienne dla wiadomości bota (CZYSTA BIEL) */
+          --bot-bg: #ffffff; /* Zmienione na czystą biel */
           --bot-text: #000000; 
         }
 
@@ -158,19 +158,20 @@
           box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        /* === Wiadomości bota (po lewej, z avatarem) - JASNE TŁO, CZARNY TEKST (NAPRAWA) === */
+        /* === Wiadomości bota (po lewej, z avatarem) - CZYSTA BIEL === */
         .bot {
           justify-content: flex-start;
         }
         .bot .message-content {
           order: 2;
           text-align: left;
-          /* NAPRAWA: JASNE TŁO (GLASS) I CZARNY TEKST */
-          background: var(--bot-bg); /* rgba(255, 255, 255, 0.9) */
+          /* NOWE STYLE: CZYSTA BIEL I CZARNY TEKST */
+          background: var(--bot-bg); /* #ffffff */
           color: var(--bot-text); /* #000000 */
-          backdrop-filter: blur(4px);
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtelny cień dla wyróżnienia */
-          border: 1px solid rgba(0, 0, 0, 0.05); /* Delikatna ramka */
+          /* Usuwamy blur, aby uzyskać czystą biel, ale zachowujemy subtelny cień */
+          backdrop-filter: none; 
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Delikatny cień dla uniesienia */
+          border: 1px solid rgba(0, 0, 0, 0.05); /* Minimalna ramka */
         }
         .bot .avatar {
           order: 1;
