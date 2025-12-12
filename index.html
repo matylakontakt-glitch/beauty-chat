@@ -83,7 +83,7 @@
         /* === GŁÓWNY KONTENER CZATU (Premium Glass + Shine Effect) === */
         .chat-box {
           width: 420px;
-          /* 🎯 NAPRAWA: Zmiana height na min-height i max-height */
+          /* 🎯 DESKTOP: Użycie min/max height by zapobiec kurczeniu się */
           min-height: 580px; 
           max-height: 580px;
           border-radius: var(--radius-lg);
@@ -382,11 +382,14 @@
         @media screen and (max-width: 768px) {
           body {
             background: #fff; 
-            padding: 10px; 
+            /* 🎯 ZMIANA: Usunięcie paddingu z body na mobile (aby całe body mogło zająć 100%) */
+            padding: 0; 
             height: auto;
             min-height: 100vh; 
             justify-content: flex-start; 
             overflow-y: auto; 
+            /* 🎯 DODATEK: Wymuszenie pełnej szerokości viewportu */
+            width: 100vw; 
           }
           body::before {
               display: none; 
@@ -394,15 +397,20 @@
 
           h2 {
             font-size: 20px;
-            margin-top: 20px;
+            /* Zwiększenie marginesu górnego dla lepszego wyglądu */
+            margin-top: 30px; 
             margin-bottom: 20px;
           }
           
+          /* 🎯 NAPRAWA: Zapewnienie, że chat-wrapper zajmuje całą szerokość i ma paddingi */
+          .chat-wrapper {
+             width: 100%;
+             padding: 0 10px; /* Minimalny padding na zewnątrz, by nie dotykać krawędzi */
+          }
+
           .chat-box {
             width: 100%;
-            max-width: 95vw; 
-            height: 78vh;
-            /* 🎯 NAPRAWA: Zmieniam też na min/max height dla mobile */
+            /* Usuwamy max-width: 95vw, ponieważ chat-wrapper ma już marginesy */
             min-height: 78vh; 
             max-height: 78vh;
             padding: 16px;
@@ -410,6 +418,7 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
             backdrop-filter: blur(10px);
             padding-bottom: 90px; 
+            box-sizing: border-box; 
           }
           .chat-box:hover::after {
              left: -100%; 
@@ -421,7 +430,8 @@
             bottom: 10px; 
             left: 50%;
             transform: translateX(-50%);
-            width: 95%; 
+            /* Zmiana na 98% (by uniknąć zjawiska 'kurczenia się' przy 95%) */
+            width: 98%; 
             max-width: 420px; 
             gap: 10px;
             margin-top: 0; 
