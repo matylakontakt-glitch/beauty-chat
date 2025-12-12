@@ -153,15 +153,15 @@
           box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        /* === Wiadomości bota (po lewej, z avatarem) === */
+        /* === Wiadomości bota (po lewej, z avatarem) - ZM: LEPSZY KONTRAST === */
         .bot {
           justify-content: flex-start;
         }
         .bot .message-content {
           order: 2;
           text-align: left;
-          background: rgba(0, 0, 0, 0.05); /* Bardzo lekko ciemne tło */
-          color: var(--accent-soft);
+          background: rgba(0, 0, 0, 0.08); /* Lekko ciemne tło wiadomości bota */
+          color: #000; /* CZYSTY CZARNY TEKST */
           backdrop-filter: blur(4px);
         }
         .bot .avatar {
@@ -208,7 +208,7 @@
         }
 
 
-        /* ===== Input + button wrapper - ODWROCENIE ===== */
+        /* ===== Input + button wrapper - POPRAWIONY KONTRAST ===== */
         .input-row {
           display: flex;
           width: 400px;
@@ -222,18 +222,18 @@
           border-radius: var(--radius-md);
           border: 1px solid rgba(0, 0, 0, 0.2); /* Ciemna ramka */
           outline: none;
-          background: rgba(0, 0, 0, 0.05); /* Lekko ciemne tło inputu */
+          background: #ffffff; /* ZM.: Czysta biel dla inputu */
           color: var(--accent); /* Czarny tekst */
           font-size: 14px;
           transition: all 0.3s ease;
-          box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+          box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
         }
         input::placeholder {
-          color: rgba(0, 0, 0, 0.35); /* Ciemny placeholder */
+          color: rgba(0, 0, 0, 0.6); /* ZM.: Ciemniejszy placeholder dla lepszej czytelności */
         }
         input:focus {
-          background: rgba(0, 0, 0, 0.1);
-          border-color: rgba(0, 0, 0, 0.3);
+          background: #ffffff;
+          border-color: rgba(0, 0, 0, 0.5);
         }
 
         /* ===== Przycisk Wyślij - ODWROCENIE ===== */
@@ -525,4 +525,4 @@
         window.onload = loadWelcome;
     </script>
 </body>
-</html> 
+</html>
