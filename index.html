@@ -93,7 +93,7 @@
           /* Premium Glassmorphism */
           background: rgba(255, 255, 255, 0.7); 
           backdrop-filter: blur(var(--blur));
-          box-shadow: var(--box-shadow), inset 0 0 10px rgba(255, 255, 255, 0.8); /* Inset dodaje głębi */
+          box-shadow: var(--box-shadow), inset 0 0 10px rgba(255, 255, 255, 0.8); 
           border: 1px solid rgba(255, 255, 255, 0.9); 
           transition: all 0.5s ease;
         }
@@ -148,7 +148,7 @@
         }
 
 
-        /* === Tekst wiadomości === */
+        /* === Tekst wiadomości (GLOBALNY STYL DLA OBU STRON) === */
         .message-content {
           max-width: 85%;
           border-radius: 20px;
@@ -156,7 +156,10 @@
           display: inline-block;
           white-space: normal;
           line-height: 1.7;
-          background: none; 
+          background: var(--accent-light); /* CZYSTA BIEL */
+          color: var(--accent-dark); 
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Subtelny cień */
+          border: 1px solid rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
         .message-content strong {
@@ -170,10 +173,6 @@
         }
         .user .message-content {
           text-align: right;
-          background: var(--accent-light); /* CZYSTA BIEL */
-          color: var(--accent-dark); 
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); 
-          border: 1px solid rgba(0, 0, 0, 0.05);
           /* Animacja Elevate */
           animation: elevate 0.3s ease-out forwards;
         }
@@ -189,10 +188,6 @@
         .bot .message-content {
           order: 2;
           text-align: left;
-          background: var(--accent-light); /* CZYSTA BIEL */
-          color: var(--accent-dark); 
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); 
-          border: 1px solid rgba(0, 0, 0, 0.05);
         }
         .bot .avatar {
           order: 1;
@@ -301,9 +296,6 @@
           opacity: 0;
           animation: slideInFade 0.5s ease forwards;
         }
-        .message.user {
-             /* Używamy animacji 'elevate' zdefiniowanej wyżej */
-        }
         @keyframes slideInFade {
           from { opacity: 0; transform: translateX(-10px); }
           to { opacity: 1; transform: translateX(0); }
@@ -320,6 +312,8 @@
         .typing .message-content {
           background: none; 
           padding: 0;
+          box-shadow: none;
+          border: none;
         }
         .dot {
           display: inline-block;
@@ -344,7 +338,7 @@
             justify-content: flex-start; 
           }
           body::before {
-              display: none; /* Wyłączamy aureolę na telefonie */
+              display: none; 
           }
 
           h2 {
@@ -503,7 +497,7 @@
             if (t) t.remove();
         }
 
-        // Wysyłanie wiadomości
+        // 🚀 NAPRAWIONA FUNKCJA WYSYŁANIA WIADOMOŚCI 🚀
         async function sendMessage() {
             if (isSending) return; 
             
@@ -519,22 +513,24 @@
             showTyping();
 
             try {
-                // Symulacja opóźnienia sieci + generowania
-                await new Promise(r => setTimeout(r, 1500)); 
+                // PRZYWRÓCONE WYSYŁANIE WIADOMOŚCI DO TWOJEGO SERWERA
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
                 
-                // Tutaj normalnie byłby fetch do /chat (zostawiam dla Twojej logiki serwerowej)
-                // const response = await fetch('/chat', { /* ... */ });
-                // const data = await response.json();
-                
-                // Użycie placeholdera dla celów demonstracyjnych
-                const placeholderReply = `Dziękuję za wiadomość! Rozumiem, że interesuje Cię **makijaż permanentny** brwi. To świetny wybór, który podkreśli Twoje naturalne piękno. W naszej ofercie mamy różne techniki: **Puder** (delikatny efekt), **Włoski** (naturalne linie) oraz **Hybryda** (połączenie tych dwóch). Który styl najbardziej Ci się podoba?`;
-                
+                // Opóźnienie dla lepszego efektu wizualnego
+                await new Promise(r => setTimeout(r, 800)); 
+
+                const data = await response.json();
                 hideTyping();
-                addMessage(placeholderReply, 'bot'); // Zmieniono na placeholder
+                addMessage(data.reply, 'bot');
 
             } catch (error) {
+                console.error("Błąd podczas komunikacji z API:", error);
                 hideTyping();
-                addMessage("Przepraszamy, wystąpił błąd komunikacji. Prosimy spróbować ponownie.", 'bot');
+                addMessage("Przepraszamy, wystąpił błąd komunikacji. Prosimy sprawdzić konsolę deweloperską lub spróbować ponownie.", 'bot');
             } finally {
                 isSending = false; 
                 sendBtn.disabled = false;
