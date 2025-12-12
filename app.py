@@ -284,9 +284,9 @@ def chat():
         update_history(session, user_message, reply)
         return jsonify({'reply': reply})
 
-    # REGUŁA: OSOBY TOWARZYSZĄCE
+    # REGUŁA: OSOBY TOWARZYSZĄCE (POPRAWIONA)
     elif re.search(
-        r"\b(m[aą]ż\w*|partner\w*|przyjaci[oó]łk\w*|koleżank\w*|dzieck\w*|zwierzak\w*|osob\w*\s+towarzysz\w*|razem\w*)\b",
+        r"\b(m[aą]ż\w*|partner\w*|narzeczony\w*|przyjaci[oó]łk\w*|koleżank\w*|dzieck\w*|syn\w*|c[oó]rk\w*|dzieci\w*|zwierzak\w*|osob\w*\s+towarzysz\w*|razem\w*)\b",
         text_lower
     ):
         reply = "Prosimy o **bezwzględne przyjście na wizytę bez osób towarzyszących** (w tym dzieci) oraz bez zwierząt. Nie możemy przyjąć nikogo poza Panią w gabinecie. Dziękujemy za zrozumienie i dostosowanie się do naszych zasad bezpieczeństwa! 😊"
