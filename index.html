@@ -39,7 +39,7 @@
           height: 100vh;
           margin: 0;
           -webkit-font-smoothing: antialiased;
-          overflow-x: hidden; /* 🎯 NAPRAWA 1: Usunięcie poziomego scrolla na BODY */
+          overflow-x: hidden; 
           position: relative;
         }
 
@@ -83,7 +83,9 @@
         /* === GŁÓWNY KONTENER CZATU (Premium Glass + Shine Effect) === */
         .chat-box {
           width: 420px;
-          height: 580px;
+          /* 🎯 NAPRAWA: Zmiana height na min-height i max-height */
+          min-height: 580px; 
+          max-height: 580px;
           border-radius: var(--radius-lg);
           padding: 24px;
           display: flex;
@@ -98,13 +100,9 @@
           box-shadow: var(--box-shadow), inset 0 0 10px rgba(255, 255, 255, 0.8); 
           border: 1px solid rgba(255, 255, 255, 0.9); 
           transition: all 0.5s ease;
+          overflow-x: hidden; 
         }
         
-        /* 🎯 NAPRAWA 1: Usunięcie poziomego scrolla na desktop */
-        .chat-box {
-            overflow-x: hidden; 
-        }
-
         /* Refleks na chat-box po najechaniu (WOW) */
         .chat-box::after {
             content: '';
@@ -261,8 +259,8 @@
         /* ===== Input + button wrapper (AI Glass Inputs) ===== */
         .input-row {
           display: flex;
-          width: 100%; /* Ustawione na 100% */
-          max-width: 420px; /* Maksymalna szerokość dla desktop */
+          width: 100%; 
+          max-width: 420px; 
           margin-top: 20px;
           gap: 12px;
           align-items: center; 
@@ -301,7 +299,7 @@
           border: 1px solid var(--accent-gold);
           border-radius: var(--radius-md);
           padding: 0 25px;
-          height: 48px; /* Stała wysokość dopasowana do inputu */
+          height: 48px; 
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
@@ -388,7 +386,7 @@
             height: auto;
             min-height: 100vh; 
             justify-content: flex-start; 
-            overflow-y: auto; /* Umożliwienie przewijania na mobile */
+            overflow-y: auto; 
           }
           body::before {
               display: none; 
@@ -400,16 +398,17 @@
             margin-bottom: 20px;
           }
           
-          /* 🎯 NAPRAWA 2: Ustawienie pozycji inputu i dopasowanie paddingu chat-box */
           .chat-box {
             width: 100%;
             max-width: 95vw; 
             height: 78vh;
+            /* 🎯 NAPRAWA: Zmieniam też na min/max height dla mobile */
+            min-height: 78vh; 
+            max-height: 78vh;
             padding: 16px;
             border-radius: 20px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
             backdrop-filter: blur(10px);
-            /* WAŻNE: Dodatkowy padding na dole, aby wiadomości nie były zasłaniane przez stały input-row */
             padding-bottom: 90px; 
           }
           .chat-box:hover::after {
@@ -417,32 +416,30 @@
              transition: none;
           }
 
-          /* 🎯 NAPRAWA 2: Ustawienie inputu na stałe na dole (fixed) */
           .input-row {
             position: fixed;
-            bottom: 10px; /* Lekkie oddzielenie od krawędzi */
+            bottom: 10px; 
             left: 50%;
             transform: translateX(-50%);
-            width: 95%; /* Pełna szerokość mobilna */
-            max-width: 420px; /* Ograniczenie, jeśli okno jest zbyt szerokie */
+            width: 95%; 
+            max-width: 420px; 
             gap: 10px;
-            margin-top: 0; /* Usuwamy margines, bo pozycja jest fixed */
+            margin-top: 0; 
             padding: 0; 
             box-sizing: border-box; 
-            /* Dodajemy tło, żeby zasłonić przewijane wiadomości pod spodem */
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(5px);
             border-radius: var(--radius-md); 
             z-index: 100;
             padding: 8px 10px;
-            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05); /* Subtelny cień na górze */
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05); 
           }
 
           input {
             padding: 14px 16px;
             font-size: 15px;
             border-radius: 12px;
-            background: var(--accent-light); /* Użycie czystej bieli dla lepszej czytelności na fixed input */
+            background: var(--accent-light); 
             backdrop-filter: none;
           }
 
@@ -500,7 +497,7 @@
         const PHONE = "881622882"; 
         const CALL_KEYWORDS = ["kontakt telefoniczny", "umówić termin", "zadzwoń", "zadzwonić", PHONE.replace(/\s/g, "")];
 
-        // 🔹 Funkcja dodająca Przycisk Call-to-Action
+        // 🔹 Funkcja dodająca Przycisk Call-to-action
         function addCallToAction(phoneNumber) {
             const ctaDiv = document.createElement('div');
             ctaDiv.classList.add('call-to-action');
