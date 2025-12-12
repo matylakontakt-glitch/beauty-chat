@@ -229,18 +229,17 @@
         .call-to-action a {
             display: flex;
             align-items: center;
-            /* Zmiana: używamy flex-wrap, żeby nie łamało się w środku */
             flex-wrap: nowrap; 
             gap: 8px;
             background: var(--accent-gold); 
             color: var(--accent-dark); 
             font-weight: 600;
-            padding: 10px 18px; /* Zmniejszony padding */
+            padding: 10px 18px; 
             border-radius: var(--radius-md);
             text-decoration: none;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15), inset 0 0 5px rgba(255, 255, 255, 0.5); 
             transition: all 0.3s ease;
-            font-size: 14px; /* Zmniejszona czcionka */
+            font-size: 14px; 
         }
         .call-to-action a:hover {
             background: #eac3b3; 
@@ -257,9 +256,11 @@
         /* ===== Input + button wrapper (AI Glass Inputs) ===== */
         .input-row {
           display: flex;
-          width: 420px;
+          width: 420px; /* Szerokość dla desktop */
           margin-top: 20px;
           gap: 12px;
+          /* Ustawienie: Zapewnienie, że będzie działać jak kontener dla inputu */
+          align-items: center; 
         }
 
         input {
@@ -289,13 +290,13 @@
         /* ===== Przycisk Wyślij - AI Glass Button (Gold Accent + Shine Effect) ===== */
         button {
           position: relative;
-          overflow: hidden; /* Do Shine Effect */
-          /* Gold Glass Accent */
+          overflow: hidden; 
           background: var(--accent-gold);
           color: var(--accent-dark);
           border: 1px solid var(--accent-gold);
           border-radius: var(--radius-md);
           padding: 0 25px;
+          height: 100%; /* Zapewnienie, że przycisk ma taką samą wysokość jak input */
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
@@ -374,7 +375,7 @@
           40% { opacity: 1; }
         }
 
-        /* ===== RESPONSYWNOŚĆ (Telefony i Małe Tablety) ===== */
+        /* ===== 🚨 NAPRAWIONA RESPONSYWNOŚĆ (Telefony i Małe Tablety) 🚨 ===== */
         @media screen and (max-width: 768px) {
           body {
             background: #fff; 
@@ -403,15 +404,19 @@
             backdrop-filter: blur(10px);
           }
           .chat-box:hover::after {
-             left: -100%; /* Wyłączenie refleksu na mobile */
+             left: -100%; 
              transition: none;
           }
 
+          /* 🎯 NAPRAWA: Zapewnienie, że input-row ma pełną szerokość i paddingi są dobre */
           .input-row {
             width: 100%;
             max-width: 95vw; 
             gap: 10px;
             margin-top: 15px;
+            /* Zapewnienie, że jest wyśrodkowany względem reszty, ale i tak zajmuje 100% szerokości */
+            padding: 0 5px; 
+            box-sizing: border-box; 
           }
 
           input {
@@ -426,9 +431,10 @@
             padding: 0 16px;
             font-size: 15px;
             border-radius: 12px;
+            height: 44px; /* Dopasowanie wysokości przycisku do inputu na mobile */
           }
           button::after {
-            display: none; /* Wyłączenie refleksu na mobile */
+            display: none; 
           }
 
           .message-content {
@@ -449,9 +455,8 @@
               justify-content: center; 
           }
           .call-to-action a {
-              padding: 8px 12px; /* Dalsze zmniejszenie paddingu CTA na mobile */
-              font-size: 13px; /* Dalsze zmniejszenie czcionki CTA na mobile */
-              /* Zapewnienie, że tekst się nie łamie */
+              padding: 8px 12px; 
+              font-size: 13px; 
               white-space: nowrap; 
           }
         }
