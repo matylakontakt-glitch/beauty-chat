@@ -80,7 +80,7 @@
           position: relative;
         }
 
-        /* === GŁÓWNY KONTENER CZATU (Premium Glass) === */
+        /* === GŁÓWNY KONTENER CZATU (Premium Glass + Shine Effect) === */
         .chat-box {
           width: 420px;
           height: 580px;
@@ -89,6 +89,8 @@
           display: flex;
           flex-direction: column;
           overflow-y: auto;
+          position: relative; /* Potrzebne do pseudoelementu */
+          z-index: 10;
           
           /* Premium Glassmorphism */
           background: rgba(255, 255, 255, 0.7); 
@@ -97,6 +99,28 @@
           border: 1px solid rgba(255, 255, 255, 0.9); 
           transition: all 0.5s ease;
         }
+
+        /* Refleks na chat-box po najechaniu (WOW) */
+        .chat-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%; /* Start poza ekranem */
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: skewX(-20deg);
+            transition: all 0.5s ease-out;
+            opacity: 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+        .chat-box:hover::after {
+            left: 150%; /* Przesunięcie przez całą szerokość */
+            opacity: 1;
+            transition: all 1.2s ease;
+        }
+
 
         /* Stylizacja Scrollbara */
         .chat-box::-webkit-scrollbar {
@@ -127,8 +151,8 @@
           width: 30px;
           height: 30px;
           border-radius: 50%;
-          background: var(--accent-dark); /* Czarny */
-          color: #fff; /* Biały tekst */
+          background: var(--accent-dark); 
+          color: #fff; 
           font-weight: 600;
           font-size: 15px;
           display: flex;
@@ -137,7 +161,7 @@
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.3); 
         }
-        /* Pulsowanie Avatara podczas generowania wiadomości */
+        /* Pulsowanie Avatara */
         .typing .avatar {
             box-shadow: 0 0 10px var(--accent-gold-glow), 0 0 20px var(--accent-gold-glow);
             animation: pulseGlow 1.5s infinite alternate;
@@ -156,9 +180,9 @@
           display: inline-block;
           white-space: normal;
           line-height: 1.7;
-          background: var(--accent-light); /* CZYSTA BIEL */
+          background: var(--accent-light); 
           color: var(--accent-dark); 
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Subtelny cień */
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); 
           border: 1px solid rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
@@ -167,13 +191,12 @@
         }
 
 
-        /* === Wiadomości użytkownika (po prawej) - JAK BOT (CLEAN/LUX) === */
+        /* === Wiadomości użytkownika (po prawej) === */
         .user {
           justify-content: flex-end;
         }
         .user .message-content {
           text-align: right;
-          /* Animacja Elevate */
           animation: elevate 0.3s ease-out forwards;
         }
         @keyframes elevate {
@@ -181,7 +204,7 @@
             100% { transform: translateY(0); opacity: 1; }
         }
 
-        /* === Wiadomości bota (po lewej, z avatarem) - CZYSTA BIEL === */
+        /* === Wiadomości bota (po lewej, z avatarem) === */
         .bot {
           justify-content: flex-start;
         }
@@ -206,16 +229,18 @@
         .call-to-action a {
             display: flex;
             align-items: center;
+            /* Zmiana: używamy flex-wrap, żeby nie łamało się w środku */
+            flex-wrap: nowrap; 
             gap: 8px;
-            background: var(--accent-gold); /* Pastelowe złoto */
+            background: var(--accent-gold); 
             color: var(--accent-dark); 
             font-weight: 600;
-            padding: 12px 20px;
+            padding: 10px 18px; /* Zmniejszony padding */
             border-radius: var(--radius-md);
             text-decoration: none;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15), inset 0 0 5px rgba(255, 255, 255, 0.5); 
             transition: all 0.3s ease;
-            font-size: 15px;
+            font-size: 14px; /* Zmniejszona czcionka */
         }
         .call-to-action a:hover {
             background: #eac3b3; 
@@ -261,8 +286,10 @@
           box-shadow: 0 0 5px var(--accent-gold-glow), inset 0 0 5px rgba(0, 0, 0, 0.05);
         }
 
-        /* ===== Przycisk Wyślij - AI Glass Button (Gold Accent) ===== */
+        /* ===== Przycisk Wyślij - AI Glass Button (Gold Accent + Shine Effect) ===== */
         button {
+          position: relative;
+          overflow: hidden; /* Do Shine Effect */
           /* Gold Glass Accent */
           background: var(--accent-gold);
           color: var(--accent-dark);
@@ -276,6 +303,7 @@
           transition: all 0.25s ease;
           flex-shrink: 0;
           box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          z-index: 10;
         }
         button:hover {
           background: #eac3b3;
@@ -291,7 +319,26 @@
             box-shadow: none;
         }
 
-        /* === ANIMACJE (Fade + Slide-in dla wiadomości Bota) === */
+        /* Refleks na przycisku (WOW) */
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 30%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: skewX(-20deg);
+            transition: all 0.5s;
+            pointer-events: none;
+        }
+        button:hover::after {
+            left: 150%;
+            transition: all 0.6s ease-out;
+        }
+
+
+        /* === ANIMACJE === */
         .message.bot, .call-to-action {
           opacity: 0;
           animation: slideInFade 0.5s ease forwards;
@@ -301,13 +348,12 @@
           to { opacity: 1; transform: translateX(0); }
         }
 
-        /* animacja kropek - Oczekiwanie na odpowiedź */
         .typing {
           text-align: left;
           color: rgba(0, 0, 0, 0.5); 
           font-size: 18px;
           letter-spacing: 2px;
-          margin-left: 40px; /* Dopasowanie do avatara */
+          margin-left: 40px; 
         }
         .typing .message-content {
           background: none; 
@@ -356,6 +402,10 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
             backdrop-filter: blur(10px);
           }
+          .chat-box:hover::after {
+             left: -100%; /* Wyłączenie refleksu na mobile */
+             transition: none;
+          }
 
           .input-row {
             width: 100%;
@@ -377,6 +427,9 @@
             font-size: 15px;
             border-radius: 12px;
           }
+          button::after {
+            display: none; /* Wyłączenie refleksu na mobile */
+          }
 
           .message-content {
             font-size: 15px;
@@ -396,8 +449,10 @@
               justify-content: center; 
           }
           .call-to-action a {
-              padding: 10px 16px; 
-              font-size: 14px; 
+              padding: 8px 12px; /* Dalsze zmniejszenie paddingu CTA na mobile */
+              font-size: 13px; /* Dalsze zmniejszenie czcionki CTA na mobile */
+              /* Zapewnienie, że tekst się nie łamie */
+              white-space: nowrap; 
           }
         }
     </style>
@@ -497,7 +552,7 @@
             if (t) t.remove();
         }
 
-        // 🚀 NAPRAWIONA FUNKCJA WYSYŁANIA WIADOMOŚCI 🚀
+        // 🚀 FUNKCJA WYSYŁANIA WIADOMOŚCI 🚀
         async function sendMessage() {
             if (isSending) return; 
             
@@ -513,7 +568,7 @@
             showTyping();
 
             try {
-                // PRZYWRÓCONE WYSYŁANIE WIADOMOŚCI DO TWOJEGO SERWERA
+                // WYSYŁANIE WIADOMOŚCI DO TWOJEGO SERWERA
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
